@@ -1,0 +1,711 @@
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { 
+  MapPin, 
+  Calendar, 
+  ShoppingCart, 
+  PartyPopper, 
+  Star, 
+  // Clock,
+  Users, 
+  ChefHat,
+  Utensils,
+  Heart,
+  Filter,
+  Plus
+} from 'lucide-react';
+import { useApp } from '../contexts/AppContext';
+import { useAuth } from '../contexts/AuthContext';
+import { useCart } from '../contexts/CartContext';
+import { useNavigate } from 'react-router-dom';
+import BookTableModal from '../components/booking/BookTableModal';
+import OrderFoodModal from '../components/booking/OrderFoodModal';
+import EventBookingModal from '../components/booking/EventBookingModal';
+import FloatingChatButton from '../components/chat/FloatingChatButton';
+// toast no longer used in this component's current top section
+
+const HomePage: React.FC = () => {
+  const { user, isDefaultUsername } = useAuth();
+  const { restaurants, menuItems } = useApp();
+  const { addToCart, items } = useCart();
+  const navigate = useNavigate();
+  const [showBookTable, setShowBookTable] = useState(false);
+  const [showOrderFood, setShowOrderFood] = useState(false);
+  const [showEventBooking, setShowEventBooking] = useState(false);
+  const [selectedRestaurant, setSelectedRestaurant] = useState<string>('');
+  const [filterType, setFilterType] = useState<'all' | 'restaurant' | 'hotel' | 'resort'>('all');
+  const [searchText, setSearchText] = useState('');
+
+  const quickActions = [
+    {
+      id: 'book-table',
+      title: 'Book Table',
+      description: 'Reserve your favorite table',
+      icon: Calendar,
+      color: 'bg-red-800',
+      action: () => setShowBookTable(true)
+    },
+    {
+      id: 'order-food',
+      title: 'Order Food',
+      description: 'Delivery or pickup options',
+      icon: ShoppingCart,
+      color: 'bg-red-800',
+      action: () => setShowOrderFood(true)
+    },
+    {
+      id: 'event-booking',
+      title: 'Event Management',
+      description: 'Organize special occasions',
+      icon: PartyPopper,
+      color: 'bg-red-800',
+      action: () => setShowEventBooking(true)
+    },
+    {
+      id: 'event-planning',
+      title: 'Event Planning',
+      description: 'Find event managers & services',
+      icon: Calendar,
+      color: 'bg-red-800',
+      action: () => navigate('/event-planning')
+    }
+  ];
+
+  const features = [
+    {
+      icon: Calendar,
+      title: 'Table Reservations',
+      description: 'Book your perfect dining experience with just a few clicks',
+      color: 'from-red-800 to-red-900'
+    },
+    {
+      icon: ShoppingCart,
+      title: 'Food Delivery',
+      description: 'Order delicious meals for delivery or pickup',
+      color: 'from-red-800 to-red-900'
+    },
+    {
+      icon: PartyPopper,
+      title: 'Event Planning',
+      description: 'Organize memorable celebrations and corporate events',
+      color: 'from-red-800 to-red-900'
+    },
+    {
+      icon: ChefHat,
+      title: 'Premium Dining',
+      description: 'Experience world-class cuisine from top restaurants',
+      color: 'from-red-800 to-red-900'
+    }
+  ];
+
+  const stats = [
+    { number: `${restaurants.length}+`, label: 'Restaurants', icon: Utensils },
+    { number: '50K+', label: 'Happy Customers', icon: Users },
+    { number: '100K+', label: 'Orders Delivered', icon: ShoppingCart },
+    { number: '4.9', label: 'Average Rating', icon: Star }
+  ];
+
+  const filteredRestaurants = restaurants.filter(restaurant => 
+    filterType === 'all' || restaurant.type === filterType
+  );
+
+  const openRestaurants = filteredRestaurants.filter(r => r.isOpen);
+
+  const featuredRestaurants = openRestaurants.slice(0, 6); // Assuming 6 featured restaurants
+  const popularMenuItems = menuItems.slice(0, 10); // Assuming 10 popular menu items
+
+  // Search filtering for restaurants and dishes
+  const searchQuery = searchText.trim().toLowerCase();
+  const matchedRestaurants = searchQuery
+    ? openRestaurants
+        .filter(r => {
+          const nameMatch = r.name?.toLowerCase().includes(searchQuery);
+          const typeMatch = r.type?.toLowerCase().includes(searchQuery);
+          const addressMatch = r.address?.toLowerCase().includes(searchQuery);
+          return nameMatch || typeMatch || addressMatch;
+        })
+        .slice(0, 12)
+    : featuredRestaurants;
+
+  const matchedMenuItems = searchQuery
+    ? menuItems
+        .filter(m => {
+          const nameMatch = m.name?.toLowerCase().includes(searchQuery);
+          const itemCategoryMatch = m.itemCategory?.toLowerCase().includes(searchQuery);
+          return nameMatch || itemCategoryMatch;
+        })
+        .slice(0, 20)
+    : popularMenuItems;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100">
+      {/* Mobile Search + Categories */}
+      <div className="md:hidden sticky top-0 z-30 bg-gradient-to-br from-red-50 via-white to-red-100 px-4 pt-3 pb-3">
+        <div className="bg-white border rounded-xl shadow-sm px-3 py-2 flex items-center space-x-2">
+          <MapPin className="h-4 w-4 text-red-800 flex-shrink-0" />
+          <input
+            type="text"
+            placeholder="Search for restaurants, dishes..."
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            className="flex-1 text-sm outline-none placeholder:text-gray-400"
+          />
+          <Filter className="h-4 w-4 text-gray-500" />
+        </div>
+        {/* Live suggestions dropdown */}
+        {searchQuery && (
+          <div className="mt-2 bg-white border rounded-xl shadow-lg divide-y">
+            {/* Restaurants suggestions */}
+            <div className="max-h-56 overflow-auto">
+              <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">Places</div>
+              {matchedRestaurants.slice(0, 6).map((r) => (
+                <button
+                  key={r.id}
+                  onClick={() => {
+                    setSelectedRestaurant(r.id);
+                    setShowOrderFood(true);
+                  }}
+                  className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center space-x-3"
+                >
+                  <img src={r.images[0]} alt={r.name} className="w-10 h-10 rounded object-cover" />
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium text-gray-900 truncate">{r.name}</div>
+                    <div className="text-xs text-gray-500 truncate capitalize">{r.type} • {r.address}</div>
+                  </div>
+                </button>
+              ))}
+              {matchedRestaurants.length === 0 && (
+                <div className="px-3 py-3 text-sm text-gray-500">No places found</div>
+              )}
+            </div>
+            {/* Dishes suggestions */}
+            <div className="max-h-56 overflow-auto">
+              <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">Dishes</div>
+              {matchedMenuItems.slice(0, 8).map((m) => {
+                const r = restaurants.find(x => x.id === m.restaurantId);
+                return (
+                  <button
+                    key={m.id}
+                    onClick={() => {
+                      setSelectedRestaurant(m.restaurantId);
+                      setShowOrderFood(true);
+                    }}
+                    className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center space-x-3"
+                  >
+                    <img src={m.image} alt={m.name} className="w-10 h-10 rounded object-cover" />
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium text-gray-900 truncate">{m.name}</div>
+                      <div className="text-xs text-gray-500 truncate">{m.itemCategory} • {r?.name || 'Unknown'}</div>
+                    </div>
+                    <div className="ml-auto text-xs font-semibold text-gray-900">₹{m.price}</div>
+                  </button>
+                );
+              })}
+              {matchedMenuItems.length === 0 && (
+                <div className="px-3 py-3 text-sm text-gray-500">No dishes found</div>
+              )}
+            </div>
+          </div>
+        )}
+        <div className="mt-3 overflow-x-auto [-webkit-overflow-scrolling:touch]">
+          <div className="flex space-x-2 min-w-max">
+            {['Biryanis','Pizzas','Burgers','Desserts','South Indian','North Indian','Chinese','Healthy'].map((chip) => (
+              <button key={chip} className="px-3 py-1.5 bg-white border rounded-full text-xs font-medium text-gray-700 whitespace-nowrap shadow-sm">
+                {chip}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="mt-3">
+          <div className="w-full rounded-xl overflow-hidden">
+            <div className="bg-gradient-to-r from-red-800 to-red-900 text-white px-4 py-3 flex items-center justify-between">
+              <div>
+                <div className="text-sm font-semibold">Up to 50% OFF</div>
+                <div className="text-[11px] opacity-90">On top restaurants near you</div>
+              </div>
+              <div className="text-xs bg-white/15 px-3 py-1 rounded-full">Use TABULOO50</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* Hero Section */}
+      <section className="relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+              <div className="mb-6">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight">
+                  {user ? (
+                    <>
+                      <span className="text-gray-900">Welcome back,</span>
+                      <br />
+                      <span className="bg-gradient-to-r from-red-800 to-red-900 bg-clip-text text-transparent">
+                        {user.name}!
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="bg-gradient-to-r from-red-800 to-red-900 bg-clip-text text-transparent">
+                        Discover
+                      </span>
+                      <br />
+                      <span className="text-gray-900">Amazing Dining</span>
+                      <br />
+                      <span className="bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent">
+                        Experiences
+                      </span>
+                    </>
+                  )}
+                </h1>
+                <p className="text-lg sm:text-xl text-gray-600 mt-4 leading-relaxed">
+                  {user ? (
+                    "Ready for your next amazing dining experience? Explore restaurants, book tables, or order your favorite meals."
+                  ) : (
+                    "From intimate dinners to grand celebrations, Tabuloo connects you with the finest restaurants, seamless reservations, and unforgettable culinary journeys."
+                  )}
+                </p>
+                
+                {/* Default Username Prompt */}
+                {user && isDefaultUsername(user.name) && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.3 }}
+                    className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg"
+                  >
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-shrink-0">
+                        <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                          <span className="text-yellow-600 text-sm font-semibold">!</span>
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-sm font-medium text-yellow-800 mb-1">
+                          Personalize Your Profile
+                        </h3>
+                        <p className="text-sm text-yellow-700 mb-3">
+                          We've given you a temporary username. Please update your name in your profile to personalize your experience.
+                        </p>
+                        <button
+                          onClick={() => navigate('/profile')}
+                          className="inline-flex items-center px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium rounded-md transition-colors"
+                        >
+                          Update Profile
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="relative"
+            >
+              <div className="relative z-10">
+                <img
+                  src="https://images.pexels.com/photos/1267320/pexels-photo-1267320.jpeg"
+                  alt="Fine dining experience"
+                  className="rounded-lg sm:rounded-2xl shadow-2xl"
+                />
+                <div className="absolute -bottom-4 -left-4 sm:-bottom-6 sm:-left-6 bg-white p-3 sm:p-4 rounded-lg sm:rounded-xl shadow-lg">
+                  <div className="flex items-center space-x-2">
+                    <Star className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400 fill-current" />
+                    <span className="font-semibold text-sm sm:text-base">4.9 Rating</span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-gray-600">50,000+ Reviews</p>
+                </div>
+                <div className="absolute -top-4 -right-4 sm:-top-6 sm:-right-6 bg-gradient-to-r from-red-800 to-red-900 text-white p-3 sm:p-4 rounded-lg sm:rounded-xl shadow-lg">
+                  <div className="text-center">
+                    <div className="font-bold text-base sm:text-lg">{restaurants.length}+</div>
+                    <div className="text-xs sm:text-sm">Restaurants</div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Floating elements */}
+              <div className="absolute top-6 left-6 sm:top-10 sm:left-10 animate-bounce">
+                <div className="bg-white p-2 sm:p-3 rounded-full shadow-lg">
+                  <Calendar className="h-4 w-4 sm:h-6 sm:w-6 text-red-800" />
+                </div>
+              </div>
+              <div className="absolute bottom-12 right-6 sm:bottom-20 sm:right-10 animate-pulse">
+                <div className="bg-white p-2 sm:p-3 rounded-full shadow-lg">
+                  <Heart className="h-4 w-4 sm:h-6 sm:w-6 text-red-500" />
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="bg-gradient-to-r from-red-800 to-red-900 text-white py-12 sm:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
+            {stats.map((stat, index) => {
+              const Icon = stat.icon;
+              return (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  className="text-center"
+                >
+                  <Icon className="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2" />
+                  <div className="text-2xl sm:text-3xl font-bold">{stat.number}</div>
+                  <div className="text-red-100 text-sm sm:text-base">{stat.label}</div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        {/* Quick Actions Section */}
+        <section className="mb-8 sm:mb-12">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">Quick Actions</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {quickActions.map((action) => {
+              const Icon = action.icon;
+              return (
+                <button
+                  key={action.id}
+                  onClick={action.action}
+                  className="bg-white p-3 sm:p-4 rounded-lg shadow-sm border hover:shadow-md transition-shadow group"
+                  disabled={!user}
+                >
+                  <div className={`w-8 h-8 sm:w-10 sm:h-10 ${action.color} rounded-lg flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform`}>
+                    <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                  </div>
+                  <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-1">{action.title}</h3>
+                  <p className="text-xs sm:text-sm text-gray-600">{action.description}</p>
+                  {!user && (
+                    <p className="text-xs text-red-700 mt-1">Sign in to use this feature</p>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Filters */}
+        <div className="mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+            <div className="flex items-center">
+              <Filter className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600 mr-2" />
+              <span className="text-sm sm:text-base font-medium text-gray-700">Filter:</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { value: 'all', label: 'All Places' },
+                { value: 'restaurant', label: 'Restaurants' },
+                { value: 'hotel', label: 'Hotels' },
+                { value: 'resort', label: 'Resorts' }
+              ].map((filter) => (
+                <button
+                  key={filter.value}
+                  onClick={() => setFilterType(filter.value as any)}
+                  className={`px-3 py-1 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
+                    filterType === filter.value
+                      ? 'bg-red-800 text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 border'
+                  }`}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Featured/Search Places Section */}
+        <section className="mb-8 sm:mb-12">
+          <div className="text-center mb-6 sm:mb-8">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 sm:mb-3">
+              {searchQuery ? 'Search Results — Places' : 'Featured Places'}
+            </h2>
+            <p className="text-gray-600 text-sm sm:text-base">
+              {searchQuery
+                ? 'Matching restaurants based on your search'
+                : 'Discover the best restaurants, hotels, and food places in your area'}
+            </p>
+          </div>
+
+          {/* Mobile: 2 items per row */}
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            {matchedRestaurants.length === 0 && (
+              <div className="col-span-2 text-center text-gray-500 text-sm sm:text-base py-6">
+                No places found for "{searchText}".
+              </div>
+            )}
+            {matchedRestaurants.map((restaurant) => (
+              <div key={restaurant.id} className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                <img
+                  src={restaurant.images[0]}
+                  alt={restaurant.name}
+                  className="w-full h-32 sm:h-40 object-cover rounded-t-lg"
+                />
+                <div className="p-3 sm:p-4">
+                  <div className="flex justify-between items-start mb-1 sm:mb-2">
+                    <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">{restaurant.name}</h3>
+                    <span className={`px-1 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
+                      restaurant.isOpen ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {restaurant.isOpen ? 'Open' : 'Closed'}
+                    </span>
+                  </div>
+                  <p className="text-gray-600 text-xs sm:text-sm mb-1 capitalize">{restaurant.type}</p>
+                  <p className="text-gray-500 text-xs mb-2 line-clamp-2">{restaurant.address}</p>
+                  <div className="flex justify-between items-center space-x-2">
+                    <button 
+                      onClick={() => {
+                        setSelectedRestaurant(restaurant.id);
+                        setShowBookTable(true);
+                      }}
+                      className="bg-gradient-to-r from-red-800 to-red-900 text-white px-2 py-1 sm:px-3 sm:py-2 rounded text-xs sm:text-sm hover:from-red-900 hover:to-red-950 transition-colors flex-1 mr-1"
+                    >
+                      Book Table
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setSelectedRestaurant(restaurant.id);
+                        setShowOrderFood(true);
+                      }}
+                      className="bg-gradient-to-r from-red-800 to-red-900 text-white px-2 py-1 sm:px-3 sm:py-2 rounded text-xs sm:text-sm hover:from-red-900 hover:to-red-950 transition-colors flex-1"
+                    >
+                      Order Food
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Popular/Search Menu Items Section */}
+        <section className="py-8 sm:py-12 bg-gray-50 rounded-lg">
+          <div className="text-center mb-6 sm:mb-8">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 sm:mb-3">
+              {searchQuery ? 'Search Results — Dishes' : 'Popular Menu Items'}
+            </h2>
+            <p className="text-gray-600 text-sm sm:text-base">
+              {searchQuery
+                ? 'Matching dishes based on your search'
+                : 'Explore delicious dishes from our partner restaurants'}
+            </p>
+          </div>
+
+          {/* Mobile: 2 items per row */}
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            {matchedMenuItems.length === 0 && (
+              <div className="col-span-2 text-center text-gray-500 text-sm sm:text-base py-6">
+                No dishes found for "{searchText}".
+              </div>
+            )}
+            {matchedMenuItems.map((item) => {
+              const restaurant = restaurants.find(r => r.id === item.restaurantId);
+              const cartQuantity = items.find(cartItem => cartItem.id === item.id)?.quantity || 0;
+              
+              return (
+                <div key={item.id} className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    className="w-full h-28 sm:h-36 object-cover rounded-t-lg"
+                  />
+                  <div className="p-3 sm:p-4">
+                    <div className="flex items-start justify-between mb-1 sm:mb-2">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">{item.name}</h3>
+                        <p className="text-gray-600 text-xs sm:text-sm">{item.itemCategory} • {item.quantity}</p>
+                        {restaurant && (
+                          <p className="text-gray-500 text-xs">{restaurant.name}</p>
+                        )}
+                      </div>
+                      <span className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full flex-shrink-0 ml-1 ${
+                        item.category === 'veg' ? 'bg-green-500' : 'bg-red-500'
+                      }`}></span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm sm:text-base font-semibold text-gray-900">₹{item.price}</span>
+                      {user ? (
+                        <button 
+                          onClick={() => addToCart({
+                            id: item.id,
+                            name: item.name,
+                            price: item.price,
+                            image: item.image,
+                            restaurantId: item.restaurantId,
+                            restaurantName: restaurant?.name || 'Unknown Restaurant',
+                            category: item.category,
+                            itemCategory: item.itemCategory
+                          })}
+                          className="bg-gradient-to-r from-red-800 to-red-900 text-white px-2 py-1 sm:px-3 sm:py-2 rounded text-xs sm:text-sm hover:from-red-900 hover:to-red-950 transition-colors flex items-center space-x-1"
+                        >
+                          <Plus className="h-3 w-3" />
+                          <span>{cartQuantity > 0 ? `Add (${cartQuantity})` : 'Add'}</span>
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => setShowOrderFood(true)}
+                          className="bg-gradient-to-r from-red-800 to-red-900 text-white px-2 py-1 sm:px-3 sm:py-2 rounded text-xs sm:text-sm hover:from-red-900 hover:to-red-950 transition-colors"
+                        >
+                          Order
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      </div>
+
+      {/* Features Section */}
+      <section id="features" className="py-8 sm:py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-6 sm:mb-8">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 sm:mb-3">
+              Everything You Need for Perfect Dining
+            </h2>
+            <p className="text-gray-600 text-sm sm:text-base max-w-2xl mx-auto">
+              From quick bites to special celebrations, we've got you covered with our comprehensive platform
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            {features.map((feature, index) => {
+              const Icon = feature.icon;
+              return (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  className="bg-white p-3 sm:p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow group"
+                >
+                  <div className={`w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r ${feature.color} rounded-lg flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform`}>
+                    <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                  </div>
+                  <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-1">{feature.title}</h3>
+                  <p className="text-xs sm:text-sm text-gray-600 mb-2">{feature.description}</p>
+                  
+                  {/* Action Buttons */}
+                  {feature.title === 'Table Reservations' && (
+                    <button
+                      onClick={() => setShowBookTable(true)}
+                      disabled={!user}
+                      className="w-full bg-gradient-to-r from-red-800 to-red-900 text-white px-3 py-2 rounded text-xs sm:text-sm hover:from-red-900 hover:to-red-950 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {user ? 'Book Table' : 'Sign in to Book'}
+                    </button>
+                  )}
+                  
+                  {feature.title === 'Food Delivery' && (
+                    <button
+                      onClick={() => setShowOrderFood(true)}
+                      disabled={!user}
+                      className="w-full bg-gradient-to-r from-red-800 to-red-900 text-white px-3 py-1 sm:px-3 sm:py-2 rounded text-xs sm:text-sm hover:from-red-900 hover:to-red-950 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {user ? 'Order Food' : 'Sign in to Order'}
+                    </button>
+                  )}
+                  
+                  {feature.title === 'Event Planning' && (
+                    <button
+                      onClick={() => setShowEventBooking(true)}
+                      disabled={!user}
+                      className="w-full bg-gradient-to-r from-red-800 to-red-900 text-white px-3 py-1 sm:px-3 sm:py-2 rounded text-xs sm:text-sm hover:from-red-900 hover:to-red-950 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {user ? 'Plan Event' : 'Sign in to Plan'}
+                    </button>
+                  )}
+                  
+                  {feature.title === 'Premium Dining' && (
+                    <button
+                      onClick={() => setShowBookTable(true)}
+                      disabled={!user}
+                      className="w-full bg-gradient-to-r from-red-800 to-red-900 text-white px-3 py-2 rounded text-xs sm:text-sm hover:from-red-900 hover:to-red-950 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {user ? 'Book Premium' : 'Sign in to Book'}
+                    </button>
+                  )}
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="bg-gradient-to-r from-red-800 to-red-900 text-white py-12 sm:py-20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <h2 className="text-2xl sm:text-4xl font-bold mb-4 sm:mb-6">
+              Ready to Start Your Culinary Journey?
+            </h2>
+            <p className="text-lg sm:text-xl text-red-100 mb-6 sm:mb-8">
+              {user ? 'Explore our amazing features and book your next dining experience!' : 'Join thousands of food lovers who trust Tabuloo for their dining experiences'}
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
+
+
+      {/* Modals */}
+      {showBookTable && (
+        <BookTableModal
+          isOpen={showBookTable}
+          onClose={() => {
+            setShowBookTable(false);
+            setSelectedRestaurant('');
+          }}
+          selectedRestaurantId={selectedRestaurant}
+        />
+      )}
+
+      {showOrderFood && (
+        <OrderFoodModal
+          isOpen={showOrderFood}
+          onClose={() => {
+            setShowOrderFood(false);
+            setSelectedRestaurant('');
+          }}
+          selectedRestaurantId={selectedRestaurant}
+        />
+      )}
+
+      {showEventBooking && (
+        <EventBookingModal
+          isOpen={showEventBooking}
+          onClose={() => {
+            setShowEventBooking(false);
+            setSelectedRestaurant('');
+          }}
+          selectedRestaurantId={selectedRestaurant}
+        />
+      )}
+
+      {/* Floating Chat Button for General Tabuloo Support */}
+      <FloatingChatButton />
+    </div>
+  );
+};
+
+export default HomePage;

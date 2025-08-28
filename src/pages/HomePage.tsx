@@ -20,18 +20,18 @@ import { useCart } from '../contexts/CartContext';
 import { useNavigate } from 'react-router-dom';
 import BookTableModal from '../components/booking/BookTableModal';
 import OrderFoodModal from '../components/booking/OrderFoodModal';
-import EventBookingModal from '../components/booking/EventBookingModal';
+// Removed EventBookingModal as event management/booking feature is deprecated
 import FloatingChatButton from '../components/chat/FloatingChatButton';
 // toast no longer used in this component's current top section
 
 const HomePage: React.FC = () => {
   const { user, isDefaultUsername } = useAuth();
-  const { restaurants, menuItems } = useApp();
+  const { restaurants, menuItems, orders } = useApp();
   const { addToCart, items } = useCart();
   const navigate = useNavigate();
   const [showBookTable, setShowBookTable] = useState(false);
   const [showOrderFood, setShowOrderFood] = useState(false);
-  const [showEventBooking, setShowEventBooking] = useState(false);
+  // Removed showEventBooking state as event management/booking feature is deprecated
   const [selectedRestaurant, setSelectedRestaurant] = useState<string>('');
   const [filterType, setFilterType] = useState<'all' | 'restaurant' | 'hotel' | 'resort'>('all');
   const [searchText, setSearchText] = useState('');
@@ -52,14 +52,6 @@ const HomePage: React.FC = () => {
       icon: ShoppingCart,
       color: 'bg-red-800',
       action: () => setShowOrderFood(true)
-    },
-    {
-      id: 'event-booking',
-      title: 'Event Management',
-      description: 'Organize special occasions',
-      icon: PartyPopper,
-      color: 'bg-red-800',
-      action: () => setShowEventBooking(true)
     },
     {
       id: 'event-planning',
@@ -98,10 +90,13 @@ const HomePage: React.FC = () => {
     }
   ];
 
+  const deliveredOrdersCount = orders.filter(o => o.status === 'delivered' || o.status === 'completed').length;
+  const uniqueCustomersCount = new Set(orders.map(o => o.userId)).size;
+
   const stats = [
     { number: `${restaurants.length}+`, label: 'Restaurants', icon: Utensils },
-    { number: '50K+', label: 'Happy Customers', icon: Users },
-    { number: '100K+', label: 'Orders Delivered', icon: ShoppingCart },
+    { number: `${uniqueCustomersCount}`, label: 'Happy Customers', icon: Users },
+    { number: `${deliveredOrdersCount}`, label: 'Orders Delivered', icon: ShoppingCart },
     { number: '4.9', label: 'Average Rating', icon: Star }
   ];
 
@@ -311,8 +306,8 @@ const HomePage: React.FC = () => {
             >
               <div className="relative z-10">
                 <img
-                  src="https://images.pexels.com/photos/1267320/pexels-photo-1267320.jpeg"
-                  alt="Fine dining experience"
+                  src="/tabuloo-logo.png"
+                  alt="Tabuloo"
                   className="rounded-lg sm:rounded-2xl shadow-2xl"
                 />
                 <div className="absolute -bottom-4 -left-4 sm:-bottom-6 sm:-left-6 bg-white p-3 sm:p-4 rounded-lg sm:rounded-xl shadow-lg">
@@ -346,29 +341,7 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="bg-gradient-to-r from-red-800 to-red-900 text-white py-12 sm:py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
-            {stats.map((stat, index) => {
-              const Icon = stat.icon;
-              return (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="text-center"
-                >
-                  <Icon className="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2" />
-                  <div className="text-2xl sm:text-3xl font-bold">{stat.number}</div>
-                  <div className="text-red-100 text-sm sm:text-base">{stat.label}</div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
+      
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {/* Quick Actions Section */}
@@ -624,11 +597,10 @@ const HomePage: React.FC = () => {
                   
                   {feature.title === 'Event Planning' && (
                     <button
-                      onClick={() => setShowEventBooking(true)}
-                      disabled={!user}
-                      className="w-full bg-gradient-to-r from-red-800 to-red-900 text-white px-3 py-1 sm:px-3 sm:py-2 rounded text-xs sm:text-sm hover:from-red-900 hover:to-red-950 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => navigate('/event-planning')}
+                      className="w-full bg-gradient-to-r from-red-800 to-red-900 text-white px-3 py-1 sm:px-3 sm:py-2 rounded text-xs sm:text-sm hover:from-red-900 hover:to-red-950 transition-colors"
                     >
-                      {user ? 'Plan Event' : 'Sign in to Plan'}
+                      Explore Event Planning
                     </button>
                   )}
                   
@@ -666,6 +638,30 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
+      {/* Stats Section - moved near footer */}
+      <section className="bg-gradient-to-r from-red-800 to-red-900 text-white py-12 sm:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
+            {stats.map((stat, index) => {
+              const Icon = stat.icon;
+              return (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  className="text-center"
+                >
+                  <Icon className="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2" />
+                  <div className="text-2xl sm:text-3xl font-bold">{stat.number}</div>
+                  <div className="text-red-100 text-sm sm:text-base">{stat.label}</div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
 
 
       {/* Modals */}
@@ -691,16 +687,7 @@ const HomePage: React.FC = () => {
         />
       )}
 
-      {showEventBooking && (
-        <EventBookingModal
-          isOpen={showEventBooking}
-          onClose={() => {
-            setShowEventBooking(false);
-            setSelectedRestaurant('');
-          }}
-          selectedRestaurantId={selectedRestaurant}
-        />
-      )}
+      {/* Event booking modal removed */}
 
       {/* Floating Chat Button for General Tabuloo Support */}
       <FloatingChatButton />

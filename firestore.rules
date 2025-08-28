@@ -134,7 +134,10 @@ service cloud.firestore {
         // Admin updating any user
         isAdmin() ||
         // System updates for wallet balance
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['walletBalance']))
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['walletBalance'])) ||
+        // Public users (phone-based ids) can update only their display name (for demo)
+        (userId.matches('^user_[0-9]+$') &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name']))
       );
       
       // Allow delete access for:
@@ -364,6 +367,39 @@ service cloud.firestore {
       // Allow delete access for:
       // - Admin users only
       allow delete: if isAdmin() || (request.auth.uid == 'admin_001');
+    }
+
+    // Event Planning collections - allow basic functionality without Firebase auth
+    match /eventRequirements/{requirementId} {
+      allow read: if true;
+      // Allow anyone to create a requirement with minimal valid shape
+      allow create: if true;
+      // Allow updates for basic status/fields (no auth in demo)
+      allow update: if true;
+      allow delete: if isAdmin() || (request.auth != null);
+    }
+
+    match /eventManagers/{managerId} {
+      allow read: if true;
+      // Allow anyone to create a manager profile in this demo
+      allow create: if true;
+      // Allow updates so admin-like flows work without Firebase auth
+      allow update: if true;
+      allow delete: if isAdmin() || (request.auth != null);
+    }
+
+    match /eventBookings/{bookingId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if isAdmin() || (request.auth != null);
+    }
+
+    match /eventChats/{chatId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if isAdmin() || (request.auth != null);
     }
 
     // Fallback rule - allow read access for basic functionality

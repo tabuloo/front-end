@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
-import { Plus, Clock, DollarSign, Users, Package, Eye, EyeOff, ToggleLeft, ToggleRight, Edit, X, Trash2, AlertTriangle, Calendar, PartyPopper, Phone, MapPin, Lock, Eye as EyeIcon, EyeOff as EyeOffIcon } from 'lucide-react';
+import { Plus, Clock, DollarSign, Users, Package, ToggleLeft, ToggleRight, Edit, X, Trash2, AlertTriangle, Calendar, PartyPopper, Phone, MapPin, Lock, Eye as EyeIcon, EyeOff as EyeOffIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatOrderDate, formatBookingDate, formatTime } from '../utils/dateUtils';
 
@@ -1674,12 +1674,12 @@ const RestaurantOwnerDashboard: React.FC = () => {
                         >
                           {item.available ? (
                             <>
-                              <Eye className="h-4 w-4" />
+                              <EyeIcon className="h-4 w-4" />
                               <span>Available</span>
                             </>
                           ) : (
                             <>
-                              <EyeOff className="h-4 w-4" />
+                              <EyeOffIcon className="h-4 w-4" />
                               <span>Unavailable</span>
                             </>
                           )}

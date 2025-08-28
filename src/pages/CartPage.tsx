@@ -50,11 +50,6 @@ const CartPage: React.FC = () => {
        return;
      }
 
-     if (!window.google || !window.google.maps) {
-       toast.error('Google Maps is not loaded. Please wait a moment and try again.');
-       return;
-     }
-
      setIsGettingLocation(true);
     
     navigator.geolocation.getCurrentPosition(
@@ -66,25 +61,40 @@ const CartPage: React.FC = () => {
           formattedAddress: ''
         };
 
-        // Use reverse geocoding to get address
-        if (window.google && window.google.maps) {
-          const geocoder = new window.google.maps.Geocoder();
-          geocoder.geocode({ location: { lat: location.lat, lng: location.lng } }, (results: any, status: any) => {
-            setIsGettingLocation(false);
-            if (status === 'OK' && results && results[0]) {
-              location.address = results[0].formatted_address;
-              location.formattedAddress = results[0].formatted_address;
-              
-              setSelectedLocation(location);
-              setDeliveryAddress(location.formattedAddress);
-              toast.success('Current location detected and address filled!');
-            } else {
-              toast.error('Could not get address for current location');
-            }
-          });
-        } else {
+        const finalizeWithCoordinates = () => {
           setIsGettingLocation(false);
-          toast.error('Google Maps not loaded. Please try again.');
+          location.address = `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`;
+          location.formattedAddress = location.address;
+          setSelectedLocation(location);
+          setDeliveryAddress(location.formattedAddress);
+          toast('Using coordinates as address. You can edit it.');
+        };
+
+        const tryGeocode = () => {
+          if (window.google && window.google.maps) {
+            const geocoder = new window.google.maps.Geocoder();
+            geocoder.geocode({ location: { lat: location.lat, lng: location.lng } }, (results: any, status: any) => {
+              setIsGettingLocation(false);
+              if (status === 'OK' && results && results[0]) {
+                location.address = results[0].formatted_address;
+                location.formattedAddress = results[0].formatted_address;
+                
+                setSelectedLocation(location);
+                setDeliveryAddress(location.formattedAddress);
+                toast.success('Current location detected and address filled!');
+              } else {
+                finalizeWithCoordinates();
+              }
+            });
+          } else {
+            finalizeWithCoordinates();
+          }
+        };
+
+        if (!window.google || !window.google.maps) {
+          setTimeout(tryGeocode, 800);
+        } else {
+          tryGeocode();
         }
       },
       (error) => {

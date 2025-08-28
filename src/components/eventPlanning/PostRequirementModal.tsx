@@ -157,7 +157,7 @@ const PostRequirementModal: React.FC<PostRequirementModalProps> = ({ isOpen, onC
       const imageUrls = await Promise.all(imagePromises);
 
       await addEventRequirement({
-        userId: user.uid,
+        userId: user.id,
         eventType: formData.eventType,
         eventDate: formData.eventDate,
         location: formData.location,

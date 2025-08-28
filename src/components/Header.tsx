@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import BookTableModal from './booking/BookTableModal';
 import OrderFoodModal from './booking/OrderFoodModal';
-import EventBookingModal from './booking/EventBookingModal';
+// Removed EventBookingModal import as event management/booking is deprecated
 import GeneralSupportChat from './chat/GeneralSupportChat';
 
 const Header: React.FC = () => {
@@ -19,7 +19,7 @@ const Header: React.FC = () => {
   const navigate = useNavigate();
   const [showBookTable, setShowBookTable] = useState(false);
   const [showOrderFood, setShowOrderFood] = useState(false);
-  const [showEventBooking, setShowEventBooking] = useState(false);
+  // Removed event booking state as event management/booking is deprecated
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showDeliveryBoyAuth, setShowDeliveryBoyAuth] = useState(false);
   const [authType, setAuthType] = useState<'admin' | 'restaurant_owner' | 'public_user'>('public_user');
@@ -56,16 +56,6 @@ const Header: React.FC = () => {
       color: 'text-red-800 hover:text-red-900',
       action: () => {
         setShowOrderFood(true);
-        setIsMobileMenuOpen(false);
-      }
-    },
-    {
-      id: 'event-management',
-      title: 'Event Management',
-      icon: PartyPopper,
-      color: 'text-red-800 hover:text-red-900',
-      action: () => {
-        setShowEventBooking(true);
         setIsMobileMenuOpen(false);
       }
     },
@@ -364,12 +354,7 @@ const Header: React.FC = () => {
             />
           )}
 
-          {user && showEventBooking && (
-            <EventBookingModal
-              isOpen={showEventBooking}
-              onClose={() => setShowEventBooking(false)}
-            />
-          )}
+          {/* Event booking modal removed */}
 
           {/* Auth Modal */}
           {showAuthModal && (

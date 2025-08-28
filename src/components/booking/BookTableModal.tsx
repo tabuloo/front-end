@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { X, Calendar, Clock, Users, CreditCard, Plus, Trash2, Wallet, Building, Smartphone, Banknote, Truck, Utensils } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { validateIndianPhoneNumber, formatPhoneNumber, validateCardNumber, formatCardNumber, validateCVV, formatCVV, validateExpiryDate, formatExpiryDate } from '../../utils/validation';
+import paymentService from '../../services/paymentService';
 
 interface BookTableModalProps {
   isOpen: boolean;
@@ -263,16 +264,7 @@ const BookTableModal: React.FC<BookTableModalProps> = ({ isOpen, onClose, select
     const totalMenuCost = getTotalMenuCost();
     const advanceAmount = getBookingPrice(); // 20% of total menu cost
 
-    // Handle wallet payment
-    if (paymentMethod === 'wallet') {
-      if ((user.walletBalance || 0) < advanceAmount) {
-        toast.error('Insufficient wallet balance');
-        return false;
-      }
-      updateWalletBalance((user.walletBalance || 0) - advanceAmount);
-    }
-
-    const booking = {
+    const bookingBase = {
       userId: user.id,
       restaurantId: formData.restaurantId,
       type: 'table' as const,
@@ -282,25 +274,73 @@ const BookTableModal: React.FC<BookTableModalProps> = ({ isOpen, onClose, select
       customerNames: formData.customerNames.filter(name => name.trim() !== ''),
       customerPhones: formData.customerPhones.filter(phone => phone.trim() !== ''),
       phone: formData.phone,
-      status: 'confirmed' as const,
-      paymentStatus: 'paid' as const,
       amount: advanceAmount,
       createdAt: new Date(),
       specialRequests: formData.specialRequests,
       foodOptions: formData.foodOptions,
-      paymentMethod: paymentMethod,
-      selectedMenuItems: selectedMenuItems // Add selected menu items to booking
+      selectedMenuItems: selectedMenuItems
     };
 
+    // Wallet: deduct and confirm booking immediately
+    if (paymentMethod === 'wallet') {
+      if ((user.walletBalance || 0) < advanceAmount) {
+        toast.error('Insufficient wallet balance');
+        return false;
+      }
+      updateWalletBalance((user.walletBalance || 0) - advanceAmount);
+
+      const booking = {
+        ...bookingBase,
+        status: 'confirmed' as const,
+        paymentStatus: 'paid' as const,
+        paymentMethod: 'wallet' as const
+      };
+
+      try {
+        await addBooking(booking);
+        await sendBookingEmails(booking, selectedRestaurant, user);
+        setStep('confirmation');
+      } catch (error) {
+        console.error('Booking error:', error);
+        toast.error('Failed to confirm booking');
+      }
+      return;
+    }
+
+    // Razorpay flow for card/netbanking/upi
     try {
-      await addBooking(booking);
-      
-      // Simulate email sending
-      await sendBookingEmails(booking, selectedRestaurant, user);
-      
-      setStep('confirmation');
+      await paymentService.initializePayment(
+        {
+          total: advanceAmount,
+          address: selectedRestaurant.address,
+          customerPhone: formData.phone
+        },
+        { name: user.name, email: user.email },
+        async (response: any) => {
+          const booking = {
+            ...bookingBase,
+            status: 'confirmed' as const,
+            paymentStatus: 'paid' as const,
+            paymentMethod: 'razorpay' as const,
+            razorpayPaymentId: response.razorpay_payment_id || null
+          };
+          try {
+            await addBooking(booking);
+            await sendBookingEmails(booking, selectedRestaurant, user);
+            setStep('confirmation');
+          } catch (error) {
+            console.error('Booking error after payment:', error);
+            toast.error('Payment succeeded, but booking failed. Contact support.');
+          }
+        },
+        (error: any) => {
+          console.error('Payment failed:', error);
+          toast.error('Payment failed or was cancelled');
+        }
+      );
     } catch (error) {
-      console.error('Booking error:', error);
+      console.error('Payment initialization error:', error);
+      toast.error('Unable to start payment');
     }
   };
 

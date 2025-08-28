@@ -49,10 +49,7 @@ const AdminDashboard: React.FC = () => {
       return;
     }
     
-    if (!formData.price || parseFloat(formData.price) <= 0) {
-      toast.error('Please enter a valid average price per person');
-      return;
-    }
+    // Removed average price per person requirement
     
     if (!formData.ownerUsername.trim()) {
       toast.error('Owner username is required');
@@ -71,7 +68,8 @@ const AdminDashboard: React.FC = () => {
       capacity: parseInt(formData.capacity),
       crowdCapacity: parseInt(formData.crowdCapacity),
       images: formData.images ? formData.images.split(',').map(img => img.trim()).filter(img => img) : [],
-      price: parseFloat(formData.price),
+      // Keep schema compatibility; default price to 0 when not captured during add
+      price: 0,
       ownerCredentials: {
         username: formData.ownerUsername.trim(),
         password: formData.ownerPassword
@@ -112,7 +110,7 @@ const AdminDashboard: React.FC = () => {
       capacity: restaurant.capacity.toString(),
       crowdCapacity: restaurant.crowdCapacity.toString(),
       images: restaurant.images.join(', '),
-      price: restaurant.price.toString(),
+      price: (restaurant.price ?? 0).toString(),
       ownerUsername: restaurant.ownerCredentials.username,
       ownerPassword: restaurant.ownerCredentials.password,
       timings: restaurant.timings
@@ -152,7 +150,8 @@ const AdminDashboard: React.FC = () => {
       capacity: parseInt(formData.capacity),
       crowdCapacity: parseInt(formData.crowdCapacity),
       images: formData.images.split(',').map(img => img.trim()),
-      price: parseFloat(formData.price),
+      // Preserve existing price; do not require editing it here
+      price: editingRestaurant.price ?? 0,
       ownerCredentials: {
         username: formData.ownerUsername,
         password: formData.ownerPassword
@@ -531,22 +530,7 @@ const AdminDashboard: React.FC = () => {
                     <p className="text-xs text-gray-500 mt-1">Optional: Add image URLs separated by commas</p>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Average Price per Person (₹) <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      required
-                      value={formData.price}
-                      onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                      placeholder="Average cost per person"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Typical cost per person for a meal</p>
-                  </div>
+                  {/* Average Price per Person input removed from Add form */}
                 </div>
 
                 <div>
@@ -725,20 +709,7 @@ const AdminDashboard: React.FC = () => {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Average Price per Person (₹)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      required
-                      value={formData.price}
-                      onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                      placeholder="Average cost per person"
-                    />
-                  </div>
+                  {/* Average Price per Person input removed from Edit form */}
                 </div>
 
                 <div>

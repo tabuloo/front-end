@@ -36,17 +36,10 @@ import AddressForm from '../components/AddressForm';
 
 
   const handleProfileUpdate = async () => {
-    if (profileData.phone && !validateIndianPhoneNumber(profileData.phone)) {
-      alert('Please enter a valid 10-digit Indian phone number');
-      return;
-    }
-    
-    // Update user profile in database
+    // Update only allowed fields (name) to satisfy Firestore rules
     const success = await updateUser({
-      name: profileData.name,
-      phone: profileData.phone
+      name: profileData.name
     });
-    
     if (success) {
       setEditMode(false);
     }
@@ -323,17 +316,10 @@ import AddressForm from '../components/AddressForm';
                           <input
                             type="tel"
                             value={profileData.phone}
-                            onChange={(e) => {
-                              const formatted = formatPhoneNumber(e.target.value);
-                              setProfileData(prev => ({ ...prev, phone: formatted }));
-                            }}
-                            placeholder="Enter 10-digit phone number"
-                            maxLength={10}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                            readOnly
+                            className="w-full px-3 py-2 border border-gray-200 bg-gray-50 text-gray-600 rounded-lg text-sm cursor-not-allowed"
                           />
-                          {profileData.phone && !validateIndianPhoneNumber(profileData.phone) && (
-                            <p className="text-red-500 text-xs mt-1">Please enter a valid 10-digit Indian phone number</p>
-                          )}
+                          <p className="text-gray-500 text-xs mt-1">Phone number cannot be changed.</p>
                         </div>
                       ) : (
                         <p className="text-gray-900 px-3 py-2 bg-gray-50 rounded-lg text-sm">{profileData.phone}</p>

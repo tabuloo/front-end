@@ -3,11 +3,17 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
-  base: "./", // Ensures proper routing for Vite
+  base: "/", // Changed from "./" to "/" for Vercel
   build: {
     outDir: "dist",
+    chunkSizeWarningLimit: 1000, // Increased to suppress warnings
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
   },
-  server: {
-    historyApiFallback: true, // Handles SPA routing in development
-  }
+  optimizeDeps: {
+    include: ['react', 'react-dom'],
+  },
 });

@@ -1,16 +1,28 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import express from 'express';
 import nodemailer from 'nodemailer';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
-// Expect the following env vars to be configured in Vercel project settings:
-// SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_SECURE ("true" or "false")
+// Load environment variables
+dotenv.config({ path: '.env.local' });
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ ok: false, error: 'Method Not Allowed' });
-  }
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
+const app = express();
+const PORT = 3000;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Email API endpoint
+app.post('/send-email', async (req, res) => {
   try {
     const { to, subject, html } = req.body || {};
+    
     if (!to || !subject || !html) {
       return res.status(400).json({ ok: false, error: 'Missing required fields' });
     }
@@ -70,4 +82,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
-}
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ ok: true, message: 'Email API server is running' });
+});
+
+app.listen(PORT, () => {
+  console.log(`🚀 Email API server running on http://localhost:${PORT}`);
+  console.log(`📧 Email endpoint: http://localhost:${PORT}/send-email`);
+  console.log(`🔍 Health check: http://localhost:${PORT}/health`);
+});

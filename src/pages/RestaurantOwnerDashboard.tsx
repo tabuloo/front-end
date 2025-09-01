@@ -325,6 +325,8 @@ const RestaurantOwnerDashboard: React.FC = () => {
       `;
 
       try {
+        // First try to send email via API
+        console.log('Attempting to send email via API...');
         const resp = await fetch('/api/send-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -334,20 +336,43 @@ const RestaurantOwnerDashboard: React.FC = () => {
             html: emailHtml,
           }),
         });
-        const data = await resp.json();
-        if (!resp.ok || !data.ok) {
-          throw new Error(data?.error || 'Email failed');
+        
+        console.log('Email API response status:', resp.status);
+        
+        if (!resp.ok) {
+          throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
         }
-        toast.success('Registration submitted and email notification sent to admin.');
+        
+        const data = await resp.json();
+        console.log('Email API response data:', data);
+        
+        if (!data.ok) {
+          throw new Error(data?.error || 'Email API returned error');
+        }
+        
+        toast.success('Registration submitted and email notification sent to admin successfully!');
+        
       } catch (emailError) {
-        console.error('Email API failed, falling back to Gmail compose:', emailError);
+        console.error('Email API failed:', emailError);
+        
+        // Show user what happened
+        toast.error('Automated email failed, using manual fallback...');
+        
+        // Fallback: Open Gmail compose with pre-filled details
         const subject = encodeURIComponent('New Restaurant Registration Request');
         const body = encodeURIComponent(
-          `Hello Admin,\n\nA new restaurant registration request has been submitted.\n\nRestaurant: ${registrationForm.restaurantName}\nType: ${registrationForm.restaurantType}\nAddress: ${registrationForm.restaurantAddress}\nFood Capacity: ${registrationForm.foodServingCapacity}\nCrowd Capacity: ${registrationForm.crowdCapacity}\nAvg Price/Person: ₹${registrationForm.averagePricePerPerson}\nOperating Hours: ${registrationForm.operatingHours || 'N/A'}\nImages: ${imagesList}\n\nOwner Email: ${registrationForm.ownerEmail}\nOwner Phone: ${registrationForm.ownerPhone}\n\nPlease verify and respond with credentials.`
+          `Hello Admin,\n\nA new restaurant registration request has been submitted.\n\nRestaurant: ${registrationForm.restaurantName}\nType: ${registrationForm.restaurantType}\nAddress: ${registrationForm.restaurantAddress}\nFood Capacity: ${registrationForm.foodServingCapacity}\nCrowd Capacity: ${registrationForm.crowdCapacity}\nAvg Price/Person: ₹${registrationForm.averagePricePerPerson}\nOperating Hours: ${registrationForm.operatingHours || 'N/A'}\nImages: ${imagesList}\n\nOwner Email: ${registrationForm.ownerEmail}\nOwner Phone: ${registrationForm.ownerPhone}\n\nPlease verify and respond with credentials.\n\nNote: This email was sent manually as the automated email system is not configured.`
         );
+        
         const gmailUrl = `https://mail.google.com/mail/?view=cm&to=tablooofficial1@gmail.com&su=${subject}&body=${body}`;
-        window.open(gmailUrl, '_blank');
-        toast.success('Registration submitted. Opened email draft to notify admin.');
+        
+        // Show user what's happening
+        toast.success('Registration submitted! Opening email draft to notify admin...');
+        
+        // Small delay to ensure toast is visible
+        setTimeout(() => {
+          window.open(gmailUrl, '_blank');
+        }, 1000);
       }
       
       // Reset form after successful submission
@@ -604,6 +629,24 @@ const RestaurantOwnerDashboard: React.FC = () => {
                       <p>• After approval, you'll receive login credentials via email</p>
                       <p>• You can change your password after logging in</p>
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Email Status Note */}
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-yellow-800">Email Notification Status</h3>
+                    <p className="text-sm text-yellow-700 mt-1">
+                      The system will attempt to send an automated email to admin. If that fails, it will open Gmail compose as a fallback.
+                      <br />
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1488,7 +1531,7 @@ const RestaurantOwnerDashboard: React.FC = () => {
                           </div>
                           <div className="text-right">
                             <p className="font-semibold text-gray-900 text-sm sm:text-base">₹{booking.amount.toFixed(2)} paid</p>
-                            <span className={`inline-block px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full text-xs flex items-center space-x-1 ${
+                            <span className={`inline-block px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full text-xs items-center space-x-1 ${
                               booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
                               booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                               booking.status === 'completed' ? 'bg-blue-100 text-blue-800' :

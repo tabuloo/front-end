@@ -33,60 +33,43 @@ const LoginForm: React.FC<LoginFormProps> = ({ role, onSwitchToRegister, onLogin
     return () => clearInterval(interval);
   }, [otpTimer]);
 
+  const generateOTP = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  };
+
   const sendOTP = async () => {
     if (!formData.phone.trim()) {
       toast.error('Please enter your phone number first');
       return;
     }
+
     if (!validateIndianPhoneNumber(formData.phone)) {
       toast.error('Please enter a valid 10-digit Indian phone number');
       return;
     }
+
     setIsLoading(true);
+    
     try {
-      // Call backend API to send OTP via Twilio
-  const response = await fetch('http://localhost:5000/api/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: formData.phone })
-      });
-      const data = await response.json();
-      if (response.ok && data.success) {
-        toast.success('OTP sent successfully!');
-        setOtpSent(true);
-        setOtpTimer(60);
-      } else {
-        toast.error(data.message || 'Failed to send OTP');
-      }
+      // Generate OTP (in real app, this would be sent via SMS)
+      const otp = generateOTP();
+      
+      // Store OTP in localStorage for demo purposes
+      // In production, this should be handled server-side
+      localStorage.setItem(`otp_${formData.phone}`, otp);
+      
+      // Set timer for 60 seconds
+      setOtpTimer(60);
+      setOtpSent(true);
+      
+      toast.success(`OTP sent to ${formData.phone}: ${otp}`);
+      console.log(`OTP for ${formData.phone}: ${otp}`);
+      
     } catch (error) {
       toast.error('Failed to send OTP. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
-  };
-
-  const verifyOTP = async () => {
-    if (!formData.otp.trim()) {
-      toast.error('Please enter the OTP');
-      return;
-    }
-    setIsLoading(true);
-    try {
-  const response = await fetch('http://localhost:5000/api/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: formData.phone, otp: formData.otp })
-      });
-      const data = await response.json();
-      if (response.ok && data.success) {
-        toast.success('OTP verified! Logging in...');
-        if (onLoginSuccess) onLoginSuccess();
-      } else {
-        toast.error(data.message || 'Invalid OTP');
-      }
-    } catch (error) {
-      toast.error('Error verifying OTP');
-    }
-    setIsLoading(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -97,15 +80,27 @@ const LoginForm: React.FC<LoginFormProps> = ({ role, onSwitchToRegister, onLogin
         toast.error('Phone number and OTP are required');
         return;
       }
+      
       if (!validateIndianPhoneNumber(formData.phone)) {
         toast.error('Please enter a valid 10-digit Indian phone number');
         return;
       }
+
       if (formData.otp.length !== 6) {
         toast.error('Please enter a valid 6-digit OTP');
         return;
       }
-      // OTP verification is handled by verifyOTP, not here
+
+      // Verify OTP
+      const storedOtp = localStorage.getItem(`otp_${formData.phone}`);
+      if (!storedOtp || storedOtp !== formData.otp) {
+        toast.error('Invalid OTP. Please try again.');
+        return;
+      }
+
+      // Clear OTP from localStorage
+      localStorage.removeItem(`otp_${formData.phone}`);
+      
     } else if (role === 'restaurant_owner') {
       if (!formData.username.trim() || !formData.password.trim()) {
         toast.error('Username and password are required');
@@ -192,25 +187,15 @@ const LoginForm: React.FC<LoginFormProps> = ({ role, onSwitchToRegister, onLogin
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   OTP
                 </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    required
-                    value={formData.otp}
-                    onChange={(e) => setFormData(prev => ({ ...prev, otp: e.target.value.replace(/\D/g, '').slice(0, 6) }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-center text-lg tracking-widest"
-                    placeholder="Enter 6-digit OTP"
-                    maxLength={6}
-                  />
-                  <button
-                    type="button"
-                    onClick={verifyOTP}
-                    disabled={isLoading || formData.otp.length !== 6}
-                    className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg"
-                  >
-                    Verify OTP
-                  </button>
-                </div>
+                <input
+                  type="text"
+                  required
+                  value={formData.otp}
+                  onChange={(e) => setFormData(prev => ({ ...prev, otp: e.target.value.replace(/\D/g, '').slice(0, 6) }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-center text-lg tracking-widest"
+                  placeholder="Enter 6-digit OTP"
+                  maxLength={6}
+                />
                 <div className="flex items-center justify-between mt-2">
                   <span className="text-sm text-gray-500">
                     {otpTimer > 0 ? (

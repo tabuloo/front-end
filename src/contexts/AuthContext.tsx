@@ -1,11 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
   signOut, 
-  onAuthStateChanged,
-  User as FirebaseUser,
-  updateProfile
+  onAuthStateChanged
 } from 'firebase/auth';
 import { 
   doc, 
@@ -94,11 +90,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        console.log('Initializing authentication...');
         // First check Firebase Auth state
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
           if (firebaseUser) {
-            console.log('Firebase user found:', firebaseUser.uid);
+            // ...existing code...
             // Get user data from Firestore
             const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
             if (userDoc.exists()) {
@@ -115,16 +110,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               setUser(userObj);
               // Store in localStorage for persistence
               localStorage.setItem('currentUser', JSON.stringify(userObj));
-              console.log('User set from Firebase Auth:', userObj);
+              // ...existing code...
             }
                      } else {
-             console.log('No Firebase user, checking localStorage...');
+             // ...existing code...
              // Check localStorage for custom auth users (restaurant owners, public users, admin)
              const storedUser = localStorage.getItem('currentUser');
              if (storedUser) {
                try {
                  const userData = JSON.parse(storedUser);
-                 console.log('Found stored user:', userData);
+                 // ...existing code...
                  // Verify user still exists in Firestore
                  const userDoc = await getDoc(doc(db, 'users', userData.id));
                  if (userDoc.exists()) {
@@ -137,7 +132,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                        await updateDoc(doc(db, 'users', userData.id), {
                          walletBalance: 0
                        });
-                       console.log('Updated wallet balance to 0 in Firestore for existing user');
+                       // ...existing code...
                      }
                      
                      // Update local user data to have 0 wallet balance
@@ -150,14 +145,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                      localStorage.setItem('currentUser', JSON.stringify(updatedUserData));
                      
                      setUser(updatedUserData);
-                     console.log('User restored from localStorage with 0 wallet balance:', updatedUserData);
+                     // ...existing code...
                    } else {
                      setUser(userData);
-                     console.log('User restored from localStorage:', userData);
+                     // ...existing code...
                    }
                  } else {
                    // User no longer exists, clear storage
-                   console.log('User no longer exists in Firestore, clearing storage');
+                   // ...existing code...
                    localStorage.removeItem('currentUser');
                    setUser(null);
                  }
@@ -167,7 +162,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                  setUser(null);
                }
              } else {
-               console.log('No stored user found');
+               // ...existing code...
                setUser(null);
              }
            }
@@ -183,11 +178,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     initializeAuth();
   }, []);
-
-  // Utility function to check if user is authenticated
-  const isAuthenticated = () => {
-    return user !== null;
-  };
 
   const login = async (credentials: any, role: string): Promise<boolean> => {
     setLoading(true);
@@ -230,7 +220,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           
           setUser(adminUser);
           localStorage.setItem('currentUser', JSON.stringify(adminUser));
-          console.log('Admin user logged in:', adminUser);
+          // ...existing code...
           setLoading(false);
           return true;
         } else {
@@ -277,7 +267,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             try {
               await setDoc(doc(db, 'users', ownerId), ownerData);
             } catch (error) {
-              console.log('User creation error (continuing anyway):', error);
+              // ...existing code...
             }
             
             const ownerUser: User = {
@@ -291,7 +281,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             
             setUser(ownerUser);
             localStorage.setItem('currentUser', JSON.stringify(ownerUser));
-            console.log('Restaurant owner logged in:', ownerUser);
+            // ...existing code...
             
             setLoading(false);
             return true;
@@ -343,7 +333,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               
               setUser(publicUser);
               localStorage.setItem('currentUser', JSON.stringify(publicUser));
-              console.log('Public user logged in:', publicUser);
+              // ...existing code...
             } else {
               // If user doesn't exist, create a new user with the phone number
               const newUser = {
@@ -366,7 +356,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               
               setUser(publicUser);
               localStorage.setItem('currentUser', JSON.stringify(publicUser));
-              console.log('New public user created and logged in:', publicUser);
+              // ...existing code...
             }
             
             setLoading(false);
@@ -431,7 +421,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 
                 setUser(deliveryBoyUser);
                 localStorage.setItem('currentUser', JSON.stringify(deliveryBoyUser));
-                console.log('Delivery boy logged in with password:', deliveryBoyUser);
+                // ...existing code...
                 
                 setLoading(false);
                 return true;
@@ -488,7 +478,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 // Clear the OTP after successful login
                 localStorage.removeItem(`delivery_login_otp_${credentials.phone}`);
                 
-                console.log('Delivery boy logged in with OTP:', deliveryBoyUser);
+                // ...existing code...
                 
                 setLoading(false);
                 return true;
@@ -623,7 +613,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       setUser(publicUser);
       localStorage.setItem('currentUser', JSON.stringify(publicUser));
-      console.log('New user registered:', publicUser);
+  // ...existing code...
       
       setLoading(false);
       return true;
@@ -637,7 +627,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     try {
-      console.log('Logging out user:', user);
+  // ...existing code...
       if (auth.currentUser) {
         await signOut(auth);
       }
@@ -645,7 +635,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.removeItem('currentUser');
       localStorage.removeItem('restaurantOwnerSession');
       setUser(null);
-      console.log('User logged out successfully');
+  // ...existing code...
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -679,7 +669,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
          setUser(updatedUser);
          localStorage.setItem('currentUser', JSON.stringify(updatedUser));
          
-         console.log('Wallet balance reset to 0 for user:', user.id);
+         // ...existing code...
          return true;
        } catch (error) {
          console.error('Error resetting wallet balance:', error);
@@ -719,7 +709,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       // For demo purposes, we'll simulate sending OTP
       // In production, this should integrate with actual SMS service
-      console.log(`Sending login OTP to phone: ${phoneNumber}`);
+  // ...existing code...
       
       // Store OTP in localStorage for demo (in production, this should be server-side)
       const demoOTP = '123456';

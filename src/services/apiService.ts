@@ -21,19 +21,21 @@ export interface APIResponse<T = any> {
 export class APIService {
   /**
    * Send OTP via SMS
-   * POST /api/sms/send-otp
+   * POST /api/otp/send
    */
   async sendOTP(request: SendOTPRequest): Promise<APIResponse> {
     try {
       console.log('Sending OTP to:', request.phoneNumber);
       
-      const response = await fetch(`${API_BASE_URL}/api/sms/send-otp`, {
+      const response = await fetch(`${API_BASE_URL}/api/otp/send`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: JSON.stringify(request)
+        body: JSON.stringify({
+          identifier: request.phoneNumber // Backend expects 'identifier'
+        })
       });
 
       const data = await response.json();
@@ -43,17 +45,14 @@ export class APIService {
         return {
           success: false,
           message: data.message || `Failed to send OTP: ${response.status}`,
-          error: 'SMS_SEND_FAILED'
+          error: 'OTP_SEND_FAILED'
         };
       }
 
       return {
         success: true,
         message: data.message || 'OTP sent successfully',
-        data: data.data || {
-          phoneNumber: request.phoneNumber,
-          purpose: request.purpose
-        }
+        data: data
       };
     } catch (error) {
       console.error('API Error - Send OTP:', error);
@@ -67,19 +66,22 @@ export class APIService {
 
   /**
    * Verify OTP
-   * POST /api/sms/verify-otp
+   * POST /api/otp/verify
    */
   async verifyOTP(request: VerifyOTPRequest): Promise<APIResponse> {
     try {
       console.log('Verifying OTP for:', request.phoneNumber);
       
-      const response = await fetch(`${API_BASE_URL}/api/sms/verify-otp`, {
+      const response = await fetch(`${API_BASE_URL}/api/otp/verify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: JSON.stringify(request)
+        body: JSON.stringify({
+          identifier: request.phoneNumber, // Backend expects 'identifier'
+          otp: request.otp
+        })
       });
 
       const data = await response.json();
@@ -96,9 +98,10 @@ export class APIService {
       return {
         success: true,
         message: data.message || 'OTP verified successfully',
-        data: data.data || {
+        data: {
           phoneNumber: request.phoneNumber,
-          verified: true
+          verified: true,
+          sessionToken: data.sessionToken
         }
       };
     } catch (error) {

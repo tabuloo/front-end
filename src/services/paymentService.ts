@@ -9,12 +9,43 @@ class PaymentService {
     return typeof (window as any).Razorpay !== 'undefined';
   }
 
+  async createOrder(amount: number, currency: string = 'INR') {
+    try {
+      console.log('Creating payment order:', { amount, currency });
+      
+      const response = await fetch(`${API_BASE_URL}/api/payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount,
+          currency,
+          customer: 'tabuloo-customer',
+          order: `order_${Date.now()}`
+        })
+      });
+
+      const result = await response.json();
+      console.log('Create order response:', result);
+      
+      return result;
+    } catch (error) {
+      console.error('Order creation error:', error);
+      return {
+        success: false,
+        message: 'Order creation failed',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
   async createDirectOrder(orderData: any) {
     try {
       console.log('Creating order with backend');
       
       // Create order with backend first
-      const response = await fetch(`${API_BASE_URL}/api/create-order`, {
+      const response = await fetch(`${API_BASE_URL}/api/payment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -22,12 +53,8 @@ class PaymentService {
         body: JSON.stringify({
           amount: orderData.total,
           currency: 'INR',
-          receipt: `order_${Date.now()}`,
-          notes: {
-            customer_name: orderData.customerName,
-            customer_phone: orderData.customerPhone,
-            delivery_address: orderData.address
-          }
+          customer: 'tabuloo-customer',
+          order: `order_${Date.now()}`
         })
       });
 
@@ -37,7 +64,11 @@ class PaymentService {
         throw new Error(result.message || 'Failed to create order');
       }
 
-      return result.order;
+      return {
+        id: result.order_id,
+        amount: result.amount,
+        currency: result.currency
+      };
     } catch (error) {
       console.error('Order creation error:', error);
       throw error;
@@ -48,7 +79,7 @@ class PaymentService {
     try {
       console.log('Verifying payment with backend:', { paymentId, orderId });
       
-      const response = await fetch(`${API_BASE_URL}/api/verify-payment`, {
+      const response = await fetch(`${API_BASE_URL}/api/payment/verify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -87,13 +118,11 @@ class PaymentService {
       }
       
       // Create payment options with backend
-      const order = await this.createDirectOrder({
-        total: orderData.total,
-        customerName: user.name,
-        customerEmail: user.email,
-        customerPhone: orderData.customerPhone,
-        address: orderData.address
-      });
+      const order = await this.createOrder(orderData.total);
+
+      if (!order.success) {
+        throw new Error(order.message || 'Failed to create payment order');
+      }
 
       // Initialize Razorpay with backend order
       const options = {
@@ -102,7 +131,7 @@ class PaymentService {
         currency: order.currency,
         name: 'Tabuloo',
         description: 'Food Order Payment',
-        order_id: order.id,
+        order_id: order.order_id,
         handler: async (response: any) => {
           try {
             // Verify payment with backend

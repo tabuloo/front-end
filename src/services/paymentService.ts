@@ -1,6 +1,9 @@
+// Get API base URL from environment
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'https://tabuloo-backend-p95l.vercel.app';
+
 class PaymentService {
-  // Remove backend dependency and work directly with Razorpay
-  private razorpayKey = 'rzp_live_pM9jaMaFl7RvBv'; // Live key
+  // Use environment variable for Razorpay key
+  private razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_live_pM9jaMaFl7RvBv';
 
   private checkRazorpayLoaded(): boolean {
     return typeof (window as any).Razorpay !== 'undefined';
@@ -8,57 +11,63 @@ class PaymentService {
 
   async createDirectOrder(orderData: any) {
     try {
-      console.log('Creating direct order with Razorpay');
+      console.log('Creating order with backend');
       
-      // Create order directly with Razorpay
-      const options = {
-        key: this.razorpayKey,
-        amount: orderData.total * 100,
-        currency: 'INR',
-        name: 'Tabuloo',
-        description: 'Food Order Payment',
-        receipt: `order_${Date.now()}`,
-        prefill: {
-          name: orderData.customerName,
-          email: orderData.customerEmail || 'customer@tabuloo.com',
-          contact: orderData.customerPhone
+      // Create order with backend first
+      const response = await fetch(`${API_BASE_URL}/api/create-order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        notes: {
-          customer_name: orderData.customerName,
-          customer_phone: orderData.customerPhone,
-          delivery_address: orderData.address
-        },
-        theme: {
-          color: '#DC2626'
-        }
-      };
+        body: JSON.stringify({
+          amount: orderData.total,
+          currency: 'INR',
+          receipt: `order_${Date.now()}`,
+          notes: {
+            customer_name: orderData.customerName,
+            customer_phone: orderData.customerPhone,
+            delivery_address: orderData.address
+          }
+        })
+      });
 
-      return options;
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to create order');
+      }
+
+      return result.order;
     } catch (error) {
-      console.error('Direct order creation error:', error);
+      console.error('Order creation error:', error);
       throw error;
     }
   }
 
-  async verifyPayment(paymentId: string, orderId: string) {
+  async verifyPayment(paymentId: string, orderId: string, signature?: string) {
     try {
-      console.log('Verifying payment:', { paymentId, orderId });
+      console.log('Verifying payment with backend:', { paymentId, orderId });
       
-      // Since we don't have a backend, we'll return success for now
-      // In a real implementation, you would verify the payment signature
-      return {
-        success: true,
-        message: 'Payment verification completed',
-        payment_id: paymentId,
-        order_id: orderId
-      };
+      const response = await fetch(`${API_BASE_URL}/api/verify-payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          razorpay_payment_id: paymentId,
+          razorpay_order_id: orderId,
+          razorpay_signature: signature
+        })
+      });
+
+      const result = await response.json();
+      return result;
     } catch (error) {
       console.error('Payment verification error:', error);
       return {
-        success: true,
-        message: 'Payment verification completed',
-        payment_id: paymentId,
-        order_id: orderId
+        success: false,
+        message: 'Payment verification failed',
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -77,8 +86,8 @@ class PaymentService {
         throw new Error('Razorpay is not loaded. Please refresh the page and try again.');
       }
       
-      // Create payment options directly
-      const paymentOptions = await this.createDirectOrder({
+      // Create payment options with backend
+      const order = await this.createDirectOrder({
         total: orderData.total,
         customerName: user.name,
         customerEmail: user.email,
@@ -86,15 +95,32 @@ class PaymentService {
         address: orderData.address
       });
 
-      // Initialize Razorpay with live key
+      // Initialize Razorpay with backend order
       const options = {
         key: this.razorpayKey,
-        amount: orderData.total * 100,
-        currency: 'INR',
+        amount: order.amount,
+        currency: order.currency,
         name: 'Tabuloo',
         description: 'Food Order Payment',
-        receipt: `order_${Date.now()}`,
-        handler: onSuccess,
+        order_id: order.id,
+        handler: async (response: any) => {
+          try {
+            // Verify payment with backend
+            const verificationResult = await this.verifyPayment(
+              response.razorpay_payment_id,
+              response.razorpay_order_id,
+              response.razorpay_signature
+            );
+            
+            if (verificationResult.success) {
+              onSuccess(response);
+            } else {
+              onError(new Error(verificationResult.message || 'Payment verification failed'));
+            }
+          } catch (error) {
+            onError(error);
+          }
+        },
         prefill: {
           name: user.name,
           email: user.email,

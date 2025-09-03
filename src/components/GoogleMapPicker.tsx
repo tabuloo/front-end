@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { MapPin, Search, X } from 'lucide-react';
+import { loadGoogleMaps } from '../utils/googleMapsLoader';
 
 interface Location {
   lat: number;
@@ -22,125 +23,139 @@ const GoogleMapPicker: React.FC<GoogleMapPickerProps> = ({
   const mapRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [map, setMap] = useState<any>(null);
-  const [autocomplete, setAutocomplete] = useState<any>(null);
   const [marker, setMarker] = useState<any>(null);
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(initialLocation || null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!mapRef.current) return;
     
-    // Wait for Google Maps API to be loaded
-    const initMap = () => {
-      if (!window.google || !window.google.maps) {
-        // Retry after a short delay
-        setTimeout(initMap, 100);
-        return;
-      }
-
-      // Initialize map
-      const mapInstance = new window.google.maps.Map(mapRef.current, {
-        center: initialLocation 
-          ? { lat: initialLocation.lat, lng: initialLocation.lng }
-          : { lat: 20.5937, lng: 78.9629 }, // Center of India
-        zoom: 12,
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: false,
-        styles: [
-          {
-            featureType: "poi",
-            elementType: "labels",
-            stylers: [{ visibility: "off" }]
-          }
-        ]
-      });
-
-      setMap(mapInstance);
-
-      // Initialize autocomplete
-      if (searchInputRef.current) {
-        const autocompleteInstance = new window.google.maps.places.Autocomplete(searchInputRef.current, {
-          types: ['address'],
-          componentRestrictions: { country: 'IN' }
+    // Load Google Maps API asynchronously
+    const initMap = async () => {
+      try {
+        setIsLoading(true);
+        setLoadError(null);
+        
+        // Load Google Maps API with proper async loading
+        await loadGoogleMaps({
+          libraries: ['places'],
+          language: 'en',
+          region: 'IN'
         });
 
-        autocompleteInstance.addListener('place_changed', () => {
-          const place = autocompleteInstance.getPlace();
-          if (place.geometry && place.geometry.location) {
-            const location: Location = {
-              lat: place.geometry.location.lat(),
-              lng: place.geometry.location.lng(),
-              address: place.formatted_address || '',
-              formattedAddress: place.formatted_address || ''
-            };
-            
-            setSelectedLocation(location);
-            onLocationSelect(location);
-            
-            // Update map
-            mapInstance.setCenter(place.geometry.location);
-            mapInstance.setZoom(16);
-            
-            // Update marker
-            if (marker) {
-              marker.setMap(null);
+        if (!mapRef.current) return; // Component might have unmounted
+
+        // Initialize map
+        const mapInstance = new window.google.maps.Map(mapRef.current, {
+          center: initialLocation 
+            ? { lat: initialLocation.lat, lng: initialLocation.lng }
+            : { lat: 20.5937, lng: 78.9629 }, // Center of India
+          zoom: 12,
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: false,
+          styles: [
+            {
+              featureType: "poi",
+              elementType: "labels",
+              stylers: [{ visibility: "off" }]
             }
-            const newMarker = new window.google.maps.Marker({
-              position: place.geometry.location,
-              map: mapInstance,
-              title: place.formatted_address || ''
-            });
-            setMarker(newMarker);
-          }
+          ]
         });
 
-        setAutocomplete(autocompleteInstance);
-      }
+        setMap(mapInstance);
 
-      // Add click listener to map
-      mapInstance.addListener('click', (event: any) => {
-        if (event.latLng) {
-          const location: Location = {
-            lat: event.latLng.lat(),
-            lng: event.latLng.lng(),
-            address: '',
-            formattedAddress: ''
-          };
+        // Initialize autocomplete
+        if (searchInputRef.current) {
+          const autocompleteInstance = new window.google.maps.places.Autocomplete(searchInputRef.current, {
+            types: ['address'],
+            componentRestrictions: { country: 'IN' }
+          });
 
-          // Reverse geocoding
-          const geocoder = new window.google.maps.Geocoder();
-          geocoder.geocode({ location: { lat: location.lat, lng: location.lng } }, (results: any, status: any) => {
-            if (status === 'OK' && results && results[0]) {
-              location.address = results[0].formatted_address;
-              location.formattedAddress = results[0].formatted_address;
+          autocompleteInstance.addListener('place_changed', () => {
+            const place = autocompleteInstance.getPlace();
+            if (place.geometry && place.geometry.location) {
+              const location: Location = {
+                lat: place.geometry.location.lat(),
+                lng: place.geometry.location.lng(),
+                address: place.formatted_address || '',
+                formattedAddress: place.formatted_address || ''
+              };
+              
+              setSelectedLocation(location);
+              onLocationSelect(location);
+              
+              // Update map
+              mapInstance.setCenter(place.geometry.location);
+              mapInstance.setZoom(16);
+              
+              // Update marker
+              if (marker) {
+                marker.setMap(null);
+              }
+              const newMarker = new window.google.maps.Marker({
+                position: place.geometry.location,
+                map: mapInstance,
+                title: place.formatted_address || ''
+              });
+              setMarker(newMarker);
             }
-            
-            setSelectedLocation(location);
-            onLocationSelect(location);
-            
-            // Update marker
-            if (marker) {
-              marker.setMap(null);
-            }
-            const newMarker = new window.google.maps.Marker({
-              position: { lat: location.lat, lng: location.lng },
-              map: mapInstance,
-              title: location.formattedAddress
-            });
-            setMarker(newMarker);
           });
         }
-      });
 
-      // Set initial marker if location provided
-      if (initialLocation) {
-        const initialMarker = new window.google.maps.Marker({
-          position: { lat: initialLocation.lat, lng: initialLocation.lng },
-          map: mapInstance,
-          title: initialLocation.formattedAddress
+        // Add click listener to map
+        mapInstance.addListener('click', (event: any) => {
+          if (event.latLng) {
+            const location: Location = {
+              lat: event.latLng.lat(),
+              lng: event.latLng.lng(),
+              address: '',
+              formattedAddress: ''
+            };
+
+            // Reverse geocoding
+            const geocoder = new window.google.maps.Geocoder();
+            geocoder.geocode({ location: { lat: location.lat, lng: location.lng } }, (results: any, status: any) => {
+              if (status === 'OK' && results && results[0]) {
+                location.address = results[0].formatted_address;
+                location.formattedAddress = results[0].formatted_address;
+              }
+              
+              setSelectedLocation(location);
+              onLocationSelect(location);
+              
+              // Update marker
+              if (marker) {
+                marker.setMap(null);
+              }
+              const newMarker = new window.google.maps.Marker({
+                position: { lat: location.lat, lng: location.lng },
+                map: mapInstance,
+                title: location.formattedAddress
+              });
+              setMarker(newMarker);
+            });
+          }
         });
-        setMarker(initialMarker);
+
+        // Set initial marker if location provided
+        if (initialLocation) {
+          const initialMarker = new window.google.maps.Marker({
+            position: { lat: initialLocation.lat, lng: initialLocation.lng },
+            map: mapInstance,
+            title: initialLocation.formattedAddress
+          });
+          setMarker(initialMarker);
+        }
+
+        setIsLoading(false);
+        
+      } catch (error) {
+        console.error('Failed to load Google Maps:', error);
+        setLoadError(error instanceof Error ? error.message : 'Failed to load Google Maps');
+        setIsLoading(false);
       }
     };
 
@@ -167,7 +182,7 @@ const GoogleMapPicker: React.FC<GoogleMapPickerProps> = ({
 
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
-      setIsLoading(true);
+      setIsGettingLocation(true);
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const location: Location = {
@@ -181,7 +196,7 @@ const GoogleMapPicker: React.FC<GoogleMapPickerProps> = ({
           if (window.google && window.google.maps) {
             const geocoder = new window.google.maps.Geocoder();
             geocoder.geocode({ location: { lat: location.lat, lng: location.lng } }, (results: any, status: any) => {
-              setIsLoading(false);
+              setIsGettingLocation(false);
               if (status === 'OK' && results && results[0]) {
                 location.address = results[0].formatted_address;
                 location.formattedAddress = results[0].formatted_address;
@@ -205,24 +220,55 @@ const GoogleMapPicker: React.FC<GoogleMapPickerProps> = ({
                 setMarker(newMarker);
               }
             });
+          } else {
+            setIsGettingLocation(false);
+            // If Google Maps is not loaded, still set the location
+            setSelectedLocation(location);
+            onLocationSelect(location);
           }
         },
         (error) => {
-          setIsLoading(false);
+          setIsGettingLocation(false);
           console.error('Error getting current location:', error);
         }
       );
     }
   };
 
-  // Show loading state if Google Maps API is not loaded
-  if (!window.google || !window.google.maps) {
+  // Show loading state if Google Maps API is loading
+  if (isLoading) {
     return (
       <div className="space-y-4">
         <div className="p-4 bg-gray-50 border border-gray-200 rounded-md">
           <div className="flex items-center justify-center">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
             <span className="ml-2 text-sm text-gray-600">Loading Google Maps...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if Google Maps API failed to load
+  if (loadError) {
+    return (
+      <div className="space-y-4">
+        <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <X className="h-5 w-5 text-red-400" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-red-800">
+                Failed to load Google Maps
+              </p>
+              <p className="text-sm text-red-600 mt-1">
+                {loadError}
+              </p>
+              <p className="text-xs text-red-500 mt-2">
+                Please check your Google Maps API key configuration.
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -256,10 +302,10 @@ const GoogleMapPicker: React.FC<GoogleMapPickerProps> = ({
       <div className="flex space-x-2">
         <button
           onClick={getCurrentLocation}
-          disabled={isLoading}
+          disabled={isGettingLocation}
           className="flex-1 px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
         >
-          {isLoading ? (
+          {isGettingLocation ? (
             <>
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
               <span>Getting Location...</span>

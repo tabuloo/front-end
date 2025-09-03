@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import paymentService from '../services/paymentService';
 import GoogleMapPicker from '../components/GoogleMapPicker';
 import { validateIndianPhoneNumber, formatPhoneNumber } from '../utils/validation';
+import { loadGoogleMaps } from '../utils/googleMapsLoader';
 
 interface Location {
   lat: number;
@@ -70,32 +71,40 @@ const CartPage: React.FC = () => {
           toast('Using coordinates as address. You can edit it.');
         };
 
-        const tryGeocode = () => {
-          if (window.google && window.google.maps) {
-            const geocoder = new window.google.maps.Geocoder();
-            geocoder.geocode({ location: { lat: location.lat, lng: location.lng } }, (results: any, status: any) => {
-              setIsGettingLocation(false);
-              if (status === 'OK' && results && results[0]) {
-                location.address = results[0].formatted_address;
-                location.formattedAddress = results[0].formatted_address;
-                
-                setSelectedLocation(location);
-                setDeliveryAddress(location.formattedAddress);
-                toast.success('Current location detected and address filled!');
-              } else {
-                finalizeWithCoordinates();
-              }
+        const tryGeocode = async () => {
+          try {
+            // Ensure Google Maps is loaded
+            await loadGoogleMaps({
+              libraries: ['places'],
+              language: 'en',
+              region: 'IN'
             });
-          } else {
+
+            if (window.google && window.google.maps) {
+              const geocoder = new window.google.maps.Geocoder();
+              geocoder.geocode({ location: { lat: location.lat, lng: location.lng } }, (results: any, status: any) => {
+                setIsGettingLocation(false);
+                if (status === 'OK' && results && results[0]) {
+                  location.address = results[0].formatted_address;
+                  location.formattedAddress = results[0].formatted_address;
+                  
+                  setSelectedLocation(location);
+                  setDeliveryAddress(location.formattedAddress);
+                  toast.success('Current location detected and address filled!');
+                } else {
+                  finalizeWithCoordinates();
+                }
+              });
+            } else {
+              finalizeWithCoordinates();
+            }
+          } catch (error) {
+            console.error('Failed to load Google Maps:', error);
             finalizeWithCoordinates();
           }
         };
 
-        if (!window.google || !window.google.maps) {
-          setTimeout(tryGeocode, 800);
-        } else {
-          tryGeocode();
-        }
+        tryGeocode();
       },
       (error) => {
         setIsGettingLocation(false);
@@ -422,7 +431,7 @@ const CartPage: React.FC = () => {
                 {/* Customer Information */}
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                    <label className="flex text-sm font-medium text-gray-700 mb-2 items-center">
                       <User className="h-4 w-4 mr-2" />
                       Full Name
                     </label>
@@ -436,7 +445,7 @@ const CartPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                    <label className="flex text-sm font-medium text-gray-700 mb-2 items-center">
                       <Phone className="h-4 w-4 mr-2" />
                       Phone Number
                     </label>
@@ -461,7 +470,7 @@ const CartPage: React.FC = () => {
                 {orderType === 'delivery' ? (
                   <div className="space-y-4">
                                          <div>
-                       <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                       <label className="flex text-sm font-medium text-gray-700 mb-2 items-center">
                          <MapPin className="h-4 w-4 mr-2" />
                          Delivery Address
                        </label>

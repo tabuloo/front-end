@@ -189,7 +189,7 @@ const CartPage: React.FC = () => {
         })),
         status: (paymentMethod === 'cod' ? 'pending' : 'confirmed') as 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'completed',
         type: orderType,
-        total: getTotalPrice(),
+        total: orderType === 'delivery' ? getTotalPrice() + 40 : getTotalPrice(),
         ...(orderType === 'delivery' && { address: deliveryAddress }),
         customerName: customerName,
         customerPhone: phoneNumber,

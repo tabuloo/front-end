@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { X, Package, User, Phone, Mail, MapPin, Truck, Eye, EyeOff, CheckCircle, Shield, Camera, CreditCard, Banknote, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -36,6 +37,7 @@ interface DeliveryBoyFormData {
 
 const DeliveryBoyAuthModal: React.FC<DeliveryBoyAuthModalProps> = ({ isOpen, onClose }) => {
   const { login, register, sendDeliveryLoginOTP } = useAuth();
+  const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -330,6 +332,8 @@ const DeliveryBoyAuthModal: React.FC<DeliveryBoyAuthModalProps> = ({ isOpen, onC
         setLoginOTP('');
         setLoginOTPSent(false);
         setLoginMethod('password');
+        // Redirect to home page (App component will handle routing to delivery boy dashboard)
+        navigate('/');
       }
     } catch (error) {
       console.error('Login error:', error);

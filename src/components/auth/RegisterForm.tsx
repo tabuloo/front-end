@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { UserPlus, Send, Phone, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { validateIndianPhoneNumber, formatPhoneNumber } from '../../utils/validation';
@@ -11,6 +12,7 @@ interface RegisterFormProps {
 
 const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onRegisterSuccess }) => {
   const { register } = useAuth();
+  const navigate = useNavigate();
   const [step, setStep] = useState<'details' | 'otp'>('details');
   const [otp, setOtp] = useState('');
   const [isOtpSent, setIsOtpSent] = useState(false);
@@ -96,10 +98,12 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onRegister
     
     if (success) {
       toast.success('Registration successful!');
-      // Close the modal after successful registration
+      // Close the modal first
       if (onRegisterSuccess) {
         onRegisterSuccess();
       }
+      // Then redirect to home page
+      navigate('/');
     } else {
       toast.error('Registration failed. Please try again.');
     }

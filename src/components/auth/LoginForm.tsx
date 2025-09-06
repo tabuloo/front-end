@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { LogIn, Phone, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { validateIndianPhoneNumber, formatPhoneNumber } from '../../utils/validation';
@@ -12,6 +13,7 @@ interface LoginFormProps {
 
 const LoginForm: React.FC<LoginFormProps> = ({ role, onSwitchToRegister, onLoginSuccess }) => {
   const { login } = useAuth();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: '',
     phone: '',
@@ -117,9 +119,20 @@ const LoginForm: React.FC<LoginFormProps> = ({ role, onSwitchToRegister, onLogin
     
     if (success) {
       toast.success('Login successful!');
-      // Close the modal after successful login
-      if (onLoginSuccess) {
-        onLoginSuccess();
+      
+      // For public users, redirect to home page immediately after login
+      if (role === 'public_user') {
+        // Close the modal first
+        if (onLoginSuccess) {
+          onLoginSuccess();
+        }
+        // Then redirect to home page
+        navigate('/');
+      } else {
+        // For other roles, just close the modal
+        if (onLoginSuccess) {
+          onLoginSuccess();
+        }
       }
     } else {
       toast.error('Invalid credentials. Please try again.');

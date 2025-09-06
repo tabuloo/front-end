@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { MapPin, Shield, Store, Users } from 'lucide-react';
+import { MapPin, Shield, Store, Users, Truck } from 'lucide-react';
 import LoginForm from '../components/auth/LoginForm';
 import RegisterForm from '../components/auth/RegisterForm';
+import DeliveryBoyAuthModal from '../components/auth/DeliveryBoyAuthModal';
 
 const AuthPage: React.FC = () => {
-  const [selectedRole, setSelectedRole] = useState<'admin' | 'restaurant_owner' | 'public_user'>('public_user');
+  const [selectedRole, setSelectedRole] = useState<'admin' | 'restaurant_owner' | 'public_user' | 'delivery_boy'>('public_user');
   const [showRegister, setShowRegister] = useState(false);
+  const [showDeliveryBoyAuth, setShowDeliveryBoyAuth] = useState(false);
 
   const roles = [
     {
@@ -28,6 +30,13 @@ const AuthPage: React.FC = () => {
       description: 'Book tables and order food',
       icon: Users,
       color: 'bg-blue-500'
+    },
+    {
+      id: 'delivery_boy' as const,
+      title: 'Delivery Partner',
+      description: 'Deliver orders and earn money',
+      icon: Truck,
+      color: 'bg-orange-500'
     }
   ];
 
@@ -47,7 +56,7 @@ const AuthPage: React.FC = () => {
             </h1>
             
             <p className="text-xl text-blue-100 mb-8">
-              Connect restaurants, owners, and customers in one seamless platform.
+              Connect restaurants, owners, customers, and delivery partners in one seamless platform.
             </p>
             
             <div className="space-y-4">
@@ -62,6 +71,10 @@ const AuthPage: React.FC = () => {
               <div className="flex items-center">
                 <div className="w-2 h-2 bg-blue-300 rounded-full mr-3"></div>
                 <span>Organize events seamlessly</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-2 h-2 bg-blue-300 rounded-full mr-3"></div>
+                <span>Join as delivery partner and earn</span>
               </div>
             </div>
           </div>
@@ -80,7 +93,13 @@ const AuthPage: React.FC = () => {
                     return (
                       <button
                         key={role.id}
-                        onClick={() => setSelectedRole(role.id)}
+                        onClick={() => {
+                          if (role.id === 'delivery_boy') {
+                            setShowDeliveryBoyAuth(true);
+                          } else {
+                            setSelectedRole(role.id);
+                          }
+                        }}
                         className={`p-4 rounded-lg border-2 transition-all ${
                           selectedRole === role.id
                             ? 'border-blue-500 bg-blue-50'
@@ -125,6 +144,14 @@ const AuthPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Delivery Boy Auth Modal */}
+      {showDeliveryBoyAuth && (
+        <DeliveryBoyAuthModal
+          isOpen={showDeliveryBoyAuth}
+          onClose={() => setShowDeliveryBoyAuth(false)}
+        />
+      )}
     </div>
   );
 };

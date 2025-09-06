@@ -392,26 +392,26 @@ const DeliveryBoyAuthModal: React.FC<DeliveryBoyAuthModalProps> = ({ isOpen, onC
   );
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
       <div className="bg-white rounded-xl w-full max-w-4xl max-h-[95vh] overflow-y-auto">
-        <div className="flex justify-between items-center p-6 border-b">
-          <div className="flex items-center space-x-3">
-            <Package className="h-8 w-8 text-red-600" />
-            <h2 className="text-2xl font-bold text-gray-900">
+        <div className="flex justify-between items-center p-4 sm:p-6 border-b">
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <Package className="h-6 w-6 sm:h-8 sm:w-8 text-red-600" />
+            <h2 className="text-lg sm:text-2xl font-bold text-gray-900">
               {isLogin ? 'Delivery Partner Login' : 'Delivery Partner Registration'}
             </h2>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-2">
-            <X className="h-6 w-6" />
+            <X className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
         </div>
 
-        <div className="p-6">
-          {/* Toggle Buttons */}
-          <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-6">
+        <div className="p-4 sm:p-6">
+          {/* Toggle Buttons - More prominent on mobile */}
+          <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-4 sm:mb-6">
             <button
               onClick={() => setIsLogin(true)}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+              className={`flex-1 py-3 px-4 rounded-md text-sm sm:text-base font-semibold transition-colors ${
                 isLogin
                   ? 'bg-white text-red-600 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
@@ -421,7 +421,7 @@ const DeliveryBoyAuthModal: React.FC<DeliveryBoyAuthModalProps> = ({ isOpen, onC
             </button>
             <button
               onClick={() => setIsLogin(false)}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+              className={`flex-1 py-3 px-4 rounded-md text-sm sm:text-base font-semibold transition-colors ${
                 !isLogin
                   ? 'bg-white text-red-600 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
@@ -433,7 +433,7 @@ const DeliveryBoyAuthModal: React.FC<DeliveryBoyAuthModalProps> = ({ isOpen, onC
 
           {isLogin ? (
             /* Login Form */
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleLogin} className="space-y-4 sm:space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Phone className="h-4 w-4 inline mr-2" />
@@ -444,7 +444,7 @@ const DeliveryBoyAuthModal: React.FC<DeliveryBoyAuthModalProps> = ({ isOpen, onC
                   required
                   value={loginData.phone}
                   onChange={(e) => handleLoginInputChange('phone', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  className="w-full px-4 py-3 sm:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-base"
                   placeholder="Enter your phone number"
                   maxLength={10}
                 />
@@ -455,7 +455,7 @@ const DeliveryBoyAuthModal: React.FC<DeliveryBoyAuthModalProps> = ({ isOpen, onC
                 <button
                   type="button"
                   onClick={() => setLoginMethod('password')}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                  className={`flex-1 py-3 px-4 rounded-md text-sm font-semibold transition-colors ${
                     loginMethod === 'password'
                       ? 'bg-white text-red-600 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
@@ -466,7 +466,7 @@ const DeliveryBoyAuthModal: React.FC<DeliveryBoyAuthModalProps> = ({ isOpen, onC
                 <button
                   type="button"
                   onClick={() => setLoginMethod('otp')}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                  className={`flex-1 py-3 px-4 rounded-md text-sm font-semibold transition-colors ${
                     loginMethod === 'otp'
                       ? 'bg-white text-red-600 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
@@ -487,7 +487,7 @@ const DeliveryBoyAuthModal: React.FC<DeliveryBoyAuthModalProps> = ({ isOpen, onC
                       required
                       value={loginData.password}
                       onChange={(e) => handleLoginInputChange('password', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent pr-12"
+                      className="w-full px-4 py-3 sm:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent pr-12 text-base"
                       placeholder="Enter your password"
                     />
                     <button
@@ -510,7 +510,7 @@ const DeliveryBoyAuthModal: React.FC<DeliveryBoyAuthModalProps> = ({ isOpen, onC
                       required
                       value={loginOTP}
                       onChange={(e) => setLoginOTP(e.target.value)}
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      className="flex-1 px-4 py-3 sm:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-base"
                       placeholder="Enter 6-digit OTP"
                       maxLength={6}
                     />
@@ -518,7 +518,7 @@ const DeliveryBoyAuthModal: React.FC<DeliveryBoyAuthModalProps> = ({ isOpen, onC
                       type="button"
                       onClick={handleSendLoginOTP}
                       disabled={isSubmitting || loginOTPSent}
-                      className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                      className="px-4 py-3 sm:py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap text-sm font-medium"
                     >
                       {loginOTPSent ? 'OTP Sent' : 'Send OTP'}
                     </button>
@@ -534,7 +534,7 @@ const DeliveryBoyAuthModal: React.FC<DeliveryBoyAuthModalProps> = ({ isOpen, onC
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-gradient-to-r from-red-600 to-red-700 text-white py-3 px-4 rounded-lg hover:from-red-700 hover:to-red-800 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-gradient-to-r from-red-600 to-red-700 text-white py-4 px-4 rounded-lg hover:from-red-700 hover:to-red-800 transition-colors font-semibold text-base disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? 'Logging in...' : 'Login'}
               </button>

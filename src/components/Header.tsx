@@ -151,7 +151,7 @@ const Header: React.FC = () => {
                         <Store className="h-5 w-5" />
                       </button>
                       <button
-                        onClick={() => handleAuthClick('public_user')}
+                        onClick={() => navigate('/auth')}
                         className="bg-gradient-to-r from-red-800 to-red-900 text-white px-6 py-2 rounded-full hover:from-red-900 hover:to-red-950 transition-all font-medium"
                       >
                         Sign In
@@ -270,7 +270,7 @@ const Header: React.FC = () => {
                       </button>
                       <button
                         onClick={() => {
-                          handleAuthClick('public_user');
+                          navigate('/auth');
                           setIsMobileMenuOpen(false);
                         }}
                         className="p-3 text-center rounded-lg bg-gradient-to-r from-red-800 to-red-900 text-white hover:from-red-900 hover:to-red-950 transition-colors"

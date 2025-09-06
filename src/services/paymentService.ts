@@ -2,8 +2,7 @@
 // Always use the backend URL directly to avoid proxy issues
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'https://tabuloo-backend-p95l.vercel.app';
 
-console.log('Environment:', import.meta.env.DEV ? 'Development' : 'Production');
-console.log('API Base URL:', API_BASE_URL);
+
 
 class PaymentService {
   // Use environment variable for Razorpay key

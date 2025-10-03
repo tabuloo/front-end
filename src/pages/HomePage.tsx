@@ -162,7 +162,11 @@ const HomePage: React.FC = () => {
                   }}
                   className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center space-x-3"
                 >
-                  <img src={r.images[0]} alt={r.name} className="w-10 h-10 rounded object-cover" />
+                  <img 
+                    src={r.images[0] && r.images[0].trim() ? r.images[0] : '/placeholder-restaurant.jpg'} 
+                    alt={r.name} 
+                    className="w-10 h-10 rounded object-cover" 
+                  />
                   <div className="min-w-0">
                     <div className="text-sm font-medium text-gray-900 truncate">{r.name}</div>
                     <div className="text-xs text-gray-500 truncate capitalize">{r.type} • {r.address}</div>
@@ -187,7 +191,11 @@ const HomePage: React.FC = () => {
                     }}
                     className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center space-x-3"
                   >
-                    <img src={m.image} alt={m.name} className="w-10 h-10 rounded object-cover" />
+                    <img 
+                      src={m.image && m.image.trim() ? m.image : '/placeholder-manager.jpg'} 
+                      alt={m.name} 
+                      className="w-10 h-10 rounded object-cover" 
+                    />
                     <div className="min-w-0">
                       <div className="text-sm font-medium text-gray-900 truncate">{m.name}</div>
                       <div className="text-xs text-gray-500 truncate">{m.itemCategory} • {r?.name || 'Unknown'}</div>
@@ -424,7 +432,7 @@ const HomePage: React.FC = () => {
             {matchedRestaurants.map((restaurant) => (
               <div key={restaurant.id} className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
                 <img
-                  src={restaurant.images[0]}
+                  src={restaurant.images[0] && restaurant.images[0].trim() ? restaurant.images[0] : '/placeholder-restaurant.jpg'}
                   alt={restaurant.name}
                   className="w-full h-32 sm:h-40 object-cover rounded-t-lg"
                 />
@@ -492,7 +500,7 @@ const HomePage: React.FC = () => {
               return (
                 <div key={item.id} className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
                   <img
-                    src={item.image}
+                    src={item.image && item.image.trim() ? item.image : '/placeholder-food.jpg'}
                     alt={item.name}
                     className="w-full h-28 sm:h-36 object-cover rounded-t-lg"
                   />

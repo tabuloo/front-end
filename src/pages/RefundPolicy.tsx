@@ -175,9 +175,9 @@ const RefundPolicy: React.FC = () => {
             <h2 className="text-xl font-semibold text-gray-900 mb-4">8. Contact Information</h2>
             <div className="space-y-2 text-gray-700">
               <p>📧 Email: support@tabuloo.com</p>
-              <p>📞 Phone: [Customer Care Number]</p>
+              <p>📞 Phone: [9100933477]</p>
               <p>⏰ Support Hours: 9:00 AM - 9:00 PM (IST)</p>
-              <p>📍 Address: [Your Registered Office Address]</p>
+              <p>📍 Address: [6-237-98-79, Devalam Extation, Madanapalle, Madanapalle, Chittoor- 517325, Andhra Pradesh]</p>
             </div>
           </div>
 

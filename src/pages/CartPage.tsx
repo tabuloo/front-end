@@ -301,7 +301,7 @@ const CartPage: React.FC = () => {
               {items.map((item) => (
                 <div key={item.id} className="p-4 md:p-6 flex items-start md:items-center space-x-3 md:space-x-4 md:bg-transparent md:border-0 bg-white">
                   <img
-                    src={item.image}
+                    src={item.image && item.image.trim() ? item.image : '/placeholder-food.jpg'}
                     alt={item.name}
                     className="w-16 h-16 md:w-20 md:h-20 object-cover rounded-xl flex-shrink-0 shadow-sm"
                     onError={(e) => {

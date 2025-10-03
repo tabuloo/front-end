@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ArrowLeft, Users, Target, Award, Globe } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import ContactDetailsModal from '../components/ContactDetailsModal';
 
 const AboutUs: React.FC = () => {
   const navigate = useNavigate();
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -197,7 +199,7 @@ const AboutUs: React.FC = () => {
               Have questions about Tabuloo? We'd love to hear from you!
             </p>
             <button
-              onClick={() => navigate('/contact')}
+              onClick={() => setIsContactModalOpen(true)}
               className="bg-gradient-to-r from-red-800 to-red-900 text-white px-6 py-3 rounded-lg hover:from-red-900 hover:to-red-950 transition-all font-medium"
             >
               Contact Us
@@ -205,6 +207,12 @@ const AboutUs: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Contact Details Modal */}
+      <ContactDetailsModal
+        isOpen={isContactModalOpen}
+        onClose={() => setIsContactModalOpen(false)}
+      />
     </div>
   );
 };

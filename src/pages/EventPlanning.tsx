@@ -280,7 +280,7 @@ const EventPlanning: React.FC = () => {
                   <div key={manager.id} className="border rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
                     <div className="relative">
                       <img 
-                        src={manager.image} 
+                        src={manager.image && manager.image.trim() ? manager.image : '/placeholder-manager.jpg'} 
                         alt={manager.name}
                         className="w-full h-48 object-cover"
                       />

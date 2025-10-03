@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, Mail, Phone, MapPin, Clock, MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import apiService, { ContactFormData } from '../services/apiService';
 
 const ContactUs: React.FC = () => {
   const navigate = useNavigate();
@@ -26,9 +27,54 @@ const ContactUs: React.FC = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate form submission
-    setTimeout(() => {
-      toast.success('Thank you for your message! We\'ll get back to you soon.');
+    try {
+      const contactData: ContactFormData = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        subject: formData.subject,
+        message: formData.message
+      };
+
+      const response = await apiService.sendContactMessage(contactData);
+
+      if (response.success) {
+        toast.success('Thank you for your message! We\'ll get back to you soon.');
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          subject: '',
+          message: ''
+        });
+      } else {
+        throw new Error(response.message || 'API request failed');
+      }
+    } catch (error) {
+      console.error('Error sending contact message:', error);
+      
+      // Fallback: Open email client with pre-filled message
+      const emailSubject = encodeURIComponent(`Contact Form: ${formData.subject}`);
+      const emailBody = encodeURIComponent(
+        `Name: ${formData.name}\n` +
+        `Email: ${formData.email}\n` +
+        `Phone: ${formData.phone || 'Not provided'}\n` +
+        `Subject: ${formData.subject}\n\n` +
+        `Message:\n${formData.message}`
+      );
+      
+      const mailtoLink = `mailto:support@tabuloo.com?subject=${emailSubject}&body=${emailBody}`;
+      
+      // Show fallback message
+      toast.error(
+        'Unable to send message automatically. Opening your email client instead...',
+        { duration: 4000 }
+      );
+      
+      // Open email client
+      window.open(mailtoLink, '_blank');
+      
+      // Still reset the form
       setFormData({
         name: '',
         email: '',
@@ -36,8 +82,9 @@ const ContactUs: React.FC = () => {
         subject: '',
         message: ''
       });
+    } finally {
       setIsSubmitting(false);
-    }, 2000);
+    }
   };
 
   return (

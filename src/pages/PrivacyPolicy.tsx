@@ -191,8 +191,8 @@ const PrivacyPolicy: React.FC = () => {
             </p>
             <div className="space-y-2 text-gray-700">
               <p>📧 Email: support@tabuloo.com</p>
-              <p>📍 Address: [Your Registered Office Address]</p>
-              <p>📞 Phone: [Customer Care Number]</p>
+              <p>📍 Address: [6-237-98-79, Devalam Extation, Madanapalle, Madanapalle, Chittoor- 517325, Andhra Pradesh]</p>
+              <p>📞 Phone: [9100933477]</p>
             </div>
           </div>
         </div>

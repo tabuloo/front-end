@@ -18,6 +18,14 @@ export interface APIResponse<T = any> {
   error?: string;
 }
 
+export interface ContactFormData {
+  name: string;
+  email: string;
+  phone?: string;
+  subject: string;
+  message: string;
+}
+
 export class APIService {
   /**
    * Send OTP via SMS
@@ -163,6 +171,56 @@ export class APIService {
       return {
         success: false,
         message: 'Failed to get OTP status. Please check your connection and try again.',
+        error: 'NETWORK_ERROR'
+      };
+    }
+  }
+
+  /**
+   * Send contact form message
+   * POST /api/contact/send-message
+   */
+  async sendContactMessage(formData: ContactFormData): Promise<APIResponse> {
+    try {
+      console.log('Sending contact message:', formData);
+      
+      const response = await fetch(`${API_BASE_URL}/api/contact/send-message`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone || '',
+          subject: formData.subject,
+          message: formData.message,
+          to: 'support@tabuloo.com'
+        })
+      });
+
+      const data = await response.json();
+      console.log('Send contact message response:', data);
+
+      if (!response.ok) {
+        return {
+          success: false,
+          message: data.message || `Failed to send message: ${response.status}`,
+          error: 'MESSAGE_SEND_FAILED'
+        };
+      }
+
+      return {
+        success: true,
+        message: data.message || 'Message sent successfully',
+        data: data
+      };
+    } catch (error) {
+      console.error('API Error - Send Contact Message:', error);
+      return {
+        success: false,
+        message: 'Failed to send message. Please check your connection and try again.',
         error: 'NETWORK_ERROR'
       };
     }

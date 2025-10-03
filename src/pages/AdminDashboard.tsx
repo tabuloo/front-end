@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { Plus, Users, Store, MapPin, Edit, Trash2, X, AlertTriangle, DollarSign, TrendingUp, Calendar, BarChart3 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { Plus, Users, Store, MapPin, Edit, Trash2, X, AlertTriangle, DollarSign, TrendingUp, Calendar, BarChart3, LogOut } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
 const AdminDashboard: React.FC = () => {
   const { restaurants, orders, bookings, addRestaurant, updateRestaurant, deleteRestaurant } = useApp();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
   const [showAddForm, setShowAddForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -288,12 +292,29 @@ const AdminDashboard: React.FC = () => {
     setShowRevenueDetails(true);
   };
 
+  const handleLogout = () => {
+    logout();
+    toast.success('Logout successful!');
+    navigate('/');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Tabuloo Admin Dashboard</h1>
-          <p className="text-gray-600 mt-2 text-sm sm:text-base">Manage restaurant partnerships and create owner accounts</p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Tabuloo Admin Dashboard</h1>
+              <p className="text-gray-600 mt-2 text-sm sm:text-base">Manage restaurant partnerships and create owner accounts</p>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="text-sm font-medium">Logout</span>
+            </button>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -838,7 +859,7 @@ const AdminDashboard: React.FC = () => {
                 <div key={restaurant.id} className="border rounded-lg p-3 sm:p-4">
                   {restaurant.images[0] && (
                     <img
-                      src={restaurant.images[0]}
+                      src={restaurant.images[0] && restaurant.images[0].trim() ? restaurant.images[0] : '/placeholder-restaurant.jpg'}
                       alt={restaurant.name}
                       className="w-full h-24 sm:h-32 object-cover rounded-lg mb-2 sm:mb-3"
                     />

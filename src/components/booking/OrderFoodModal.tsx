@@ -377,7 +377,7 @@ const OrderFoodModal: React.FC<OrderFoodModalProps> = ({ isOpen, onClose, select
                   >
                     {restaurant.images[0] && (
                       <img
-                        src={restaurant.images[0]}
+                        src={restaurant.images[0] && restaurant.images[0].trim() ? restaurant.images[0] : '/placeholder-restaurant.jpg'}
                         alt={restaurant.name}
                         className="w-full h-32 sm:h-40 object-cover rounded-lg mb-3 sm:mb-4 group-hover:scale-105 transition-transform"
                       />
@@ -449,7 +449,7 @@ const OrderFoodModal: React.FC<OrderFoodModalProps> = ({ isOpen, onClose, select
                   return (
                     <div key={item.id} className="border rounded-lg sm:rounded-xl p-3 sm:p-4 hover:shadow-md transition-shadow">
                       <img
-                        src={item.image}
+                        src={item.image && item.image.trim() ? item.image : '/placeholder-food.jpg'}
                         alt={item.name}
                         className="w-full h-32 sm:h-40 object-cover rounded-lg mb-3 sm:mb-4"
                       />

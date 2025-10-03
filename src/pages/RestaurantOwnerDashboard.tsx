@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Plus, Clock, DollarSign, Users, Package, ToggleLeft, ToggleRight, Edit, X, Trash2, AlertTriangle, Calendar, PartyPopper, Phone, MapPin, Lock, Eye as EyeIcon, EyeOff as EyeOffIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatOrderDate, formatBookingDate, formatTime } from '../utils/dateUtils';
+import { sendRestaurantRegistrationEmail, sendEmailFallback } from '../services/emailService';
 
 const RestaurantOwnerDashboard: React.FC = () => {
   const { user, changeRestaurantOwnerPassword } = useAuth();
@@ -36,7 +37,6 @@ const RestaurantOwnerDashboard: React.FC = () => {
     restaurantType: '' as 'restaurant' | 'hotel' | 'resort',
     foodServingCapacity: 0,
     crowdCapacity: 0,
-    averagePricePerPerson: 0,
     operatingHours: '',
     ownerEmail: '',
     ownerPhone: '',
@@ -268,11 +268,22 @@ const RestaurantOwnerDashboard: React.FC = () => {
     }
   };
 
+  const showManualContactOption = (contactInfo: string) => {
+    toast.error('Email client not available. Please contact admin manually:', {
+      duration: 10000
+    });
+    
+    // Show contact info in a modal or alert
+    setTimeout(() => {
+      alert(`Please contact the admin manually:\n\n${contactInfo}\n\nYou can also call or WhatsApp the admin directly.`);
+    }, 1000);
+  };
+
   const handleRestaurantRegistration = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!registrationForm.restaurantName || !registrationForm.restaurantType || !registrationForm.restaurantAddress || 
-        !registrationForm.foodServingCapacity || !registrationForm.crowdCapacity || !registrationForm.averagePricePerPerson ||
+        !registrationForm.foodServingCapacity || !registrationForm.crowdCapacity ||
         !registrationForm.ownerEmail || !registrationForm.ownerPhone) {
       toast.error('Please fill in all required fields');
       return;
@@ -288,7 +299,6 @@ const RestaurantOwnerDashboard: React.FC = () => {
         foodServingCapacity: registrationForm.foodServingCapacity,
         crowdCapacity: registrationForm.crowdCapacity,
         restaurantImages: registrationForm.restaurantImages,
-        averagePricePerPerson: registrationForm.averagePricePerPerson,
         operatingHours: registrationForm.operatingHours,
         ownerEmail: registrationForm.ownerEmail,
         ownerPhone: registrationForm.ownerPhone
@@ -306,7 +316,6 @@ const RestaurantOwnerDashboard: React.FC = () => {
           <li><strong>Address:</strong> ${registrationForm.restaurantAddress}</li>
           <li><strong>Food Serving Capacity:</strong> ${registrationForm.foodServingCapacity}</li>
           <li><strong>Crowd Capacity:</strong> ${registrationForm.crowdCapacity}</li>
-          <li><strong>Avg Price/Person:</strong> ₹${registrationForm.averagePricePerPerson}</li>
           <li><strong>Operating Hours:</strong> ${registrationForm.operatingHours || 'N/A'}</li>
           <li><strong>Images:</strong> ${imagesList}</li>
         </ul>
@@ -324,55 +333,60 @@ const RestaurantOwnerDashboard: React.FC = () => {
         <p>Thank you.</p>
       `;
 
+      // Try to send email automatically using EmailJS
+      console.log('Attempting to send email automatically...');
+      
+      const emailData = {
+        restaurantName: registrationForm.restaurantName,
+        restaurantType: registrationForm.restaurantType,
+        restaurantAddress: registrationForm.restaurantAddress,
+        foodServingCapacity: registrationForm.foodServingCapacity,
+        crowdCapacity: registrationForm.crowdCapacity,
+        operatingHours: registrationForm.operatingHours,
+        ownerEmail: registrationForm.ownerEmail,
+        ownerPhone: registrationForm.ownerPhone,
+        imagesList: imagesList,
+        toEmail: 'tablooofficial1@gmail.com'
+      };
+
       try {
-        // First try to send email via API
-        console.log('Attempting to send email via API...');
-        const resp = await fetch('/api/send-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            to: 'tablooofficial1@gmail.com',
-            subject: 'New Restaurant Registration Request',
-            html: emailHtml,
-          }),
-        });
+        // Try EmailJS first
+        const emailResult = await sendRestaurantRegistrationEmail(emailData);
         
-        console.log('Email API response status:', resp.status);
-        
-        if (!resp.ok) {
-          throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+        if (emailResult.success) {
+          toast.success('Registration submitted and email sent to admin automatically!', {
+            duration: 6000
+          });
+        } else {
+          throw new Error(emailResult.message);
         }
+      } catch (error) {
+        console.error('EmailJS failed, trying fallback:', error);
         
-        const data = await resp.json();
-        console.log('Email API response data:', data);
+        // Fallback to manual email
+        const fallbackResult = await sendEmailFallback(emailData);
         
-        if (!data.ok) {
-          throw new Error(data?.error || 'Email API returned error');
+        if (fallbackResult.success) {
+          toast.success('Registration submitted! Please send the email that opens to complete the process.', {
+            duration: 6000
+          });
+          
+          // Show additional guidance
+          setTimeout(() => {
+            toast('Important: Please click "Send" in your email client to notify the admin.', {
+              duration: 8000,
+              icon: 'ℹ️'
+            });
+          }, 2000);
+        } else {
+          toast.error('Failed to send email. Please contact admin manually.', {
+            duration: 8000
+          });
+          
+          // Show manual contact option
+          const contactInfo = `Admin Email: tablooofficial1@gmail.com\nPhone: +91 91009 33477\n\nRestaurant: ${registrationForm.restaurantName}\nOwner: ${registrationForm.ownerEmail}`;
+          showManualContactOption(contactInfo);
         }
-        
-        toast.success('Registration submitted and email notification sent to admin successfully!');
-        
-      } catch (emailError) {
-        console.error('Email API failed:', emailError);
-        
-        // Show user what happened
-        toast.error('Automated email failed, using manual fallback...');
-        
-        // Fallback: Open Gmail compose with pre-filled details
-        const subject = encodeURIComponent('New Restaurant Registration Request');
-        const body = encodeURIComponent(
-          `Hello Admin,\n\nA new restaurant registration request has been submitted.\n\nRestaurant: ${registrationForm.restaurantName}\nType: ${registrationForm.restaurantType}\nAddress: ${registrationForm.restaurantAddress}\nFood Capacity: ${registrationForm.foodServingCapacity}\nCrowd Capacity: ${registrationForm.crowdCapacity}\nAvg Price/Person: ₹${registrationForm.averagePricePerPerson}\nOperating Hours: ${registrationForm.operatingHours || 'N/A'}\nImages: ${imagesList}\n\nOwner Email: ${registrationForm.ownerEmail}\nOwner Phone: ${registrationForm.ownerPhone}\n\nPlease verify and respond with credentials.\n\nNote: This email was sent manually as the automated email system is not configured.`
-        );
-        
-        const gmailUrl = `https://mail.google.com/mail/?view=cm&to=tablooofficial1@gmail.com&su=${subject}&body=${body}`;
-        
-        // Show user what's happening
-        toast.success('Registration submitted! Opening email draft to notify admin...');
-        
-        // Small delay to ensure toast is visible
-        setTimeout(() => {
-          window.open(gmailUrl, '_blank');
-        }, 1000);
       }
       
       // Reset form after successful submission
@@ -381,7 +395,6 @@ const RestaurantOwnerDashboard: React.FC = () => {
         restaurantType: '' as 'restaurant' | 'hotel' | 'resort',
         foodServingCapacity: 0,
         crowdCapacity: 0,
-        averagePricePerPerson: 0,
         operatingHours: '',
         ownerEmail: '',
         ownerPhone: '',
@@ -514,23 +527,6 @@ const RestaurantOwnerDashboard: React.FC = () => {
                   <p className="text-xs text-gray-500 mt-1">Total capacity for events and gatherings</p>
                 </div>
 
-                {/* Average Price per Person */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Average Price per Person (₹) <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min="0.01"
-                    step="0.01"
-                    value={registrationForm.averagePricePerPerson}
-                    onChange={(e) => setRegistrationForm(prev => ({ ...prev, averagePricePerPerson: parseFloat(e.target.value) || 0 }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                    placeholder="Average cost per person"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Typical cost per person for a meal</p>
-                </div>
 
                 {/* Operating Hours */}
                 <div>
@@ -1653,7 +1649,7 @@ const RestaurantOwnerDashboard: React.FC = () => {
                       {item.image && (
                         <div className="relative">
                           <img
-                            src={item.image}
+                            src={item.image && item.image.trim() ? item.image : '/placeholder-food.jpg'}
                             alt={item.name}
                             className={`w-full h-24 sm:h-32 object-cover rounded-lg mb-2 sm:mb-3 transition-all ${
                               !item.available ? 'opacity-50 grayscale' : ''

@@ -431,7 +431,7 @@ const PostRequirementModal: React.FC<PostRequirementModalProps> = ({ isOpen, onC
                   {images.map((image, index) => (
                     <div key={index} className="relative group">
                       <img
-                        src={URL.createObjectURL(image)}
+                        src={image ? URL.createObjectURL(image) : '/placeholder-image.jpg'}
                         alt={`Preview ${index + 1}`}
                         className="w-full h-20 object-cover rounded-lg"
                       />

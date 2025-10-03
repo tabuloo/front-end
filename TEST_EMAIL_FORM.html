@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Restaurant Registration Email</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .form-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #ff6b35;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #e55a2b;
+        }
+        .instructions {
+            background-color: #e8f4fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2196F3;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h1>🍽️ Test Restaurant Registration</h1>
+        
+        <div class="instructions">
+            <strong>Instructions:</strong> Fill out this form to test if emails are being sent to tablooofficial1@gmail.com. 
+            This will help verify the email system is working correctly.
+        </div>
+
+        <form action="https://formspree.io/f/xrgjbgqd" method="POST">
+            <div class="form-group">
+                <label for="restaurant_name">Restaurant Name *</label>
+                <input type="text" id="restaurant_name" name="restaurant_name" required>
+            </div>
+
+            <div class="form-group">
+                <label for="restaurant_type">Restaurant Type *</label>
+                <select id="restaurant_type" name="restaurant_type" required>
+                    <option value="">Select Type</option>
+                    <option value="restaurant">Restaurant</option>
+                    <option value="hotel">Hotel</option>
+                    <option value="resort">Resort</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="restaurant_address">Restaurant Address *</label>
+                <textarea id="restaurant_address" name="restaurant_address" rows="3" required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="food_capacity">Food Serving Capacity *</label>
+                <input type="number" id="food_capacity" name="food_capacity" min="1" required>
+            </div>
+
+            <div class="form-group">
+                <label for="crowd_capacity">Crowd Capacity *</label>
+                <input type="number" id="crowd_capacity" name="crowd_capacity" min="1" required>
+            </div>
+
+            <div class="form-group">
+                <label for="operating_hours">Operating Hours</label>
+                <input type="text" id="operating_hours" name="operating_hours" placeholder="e.g., 9:00 AM - 11:00 PM">
+            </div>
+
+            <div class="form-group">
+                <label for="owner_email">Owner Email *</label>
+                <input type="email" id="owner_email" name="owner_email" required>
+            </div>
+
+            <div class="form-group">
+                <label for="owner_phone">Owner Phone *</label>
+                <input type="tel" id="owner_phone" name="owner_phone" required>
+            </div>
+
+            <div class="form-group">
+                <label for="images_list">Images (comma-separated URLs)</label>
+                <textarea id="images_list" name="images_list" rows="2" placeholder="image1.jpg, image2.jpg"></textarea>
+            </div>
+
+            <!-- Hidden fields for Formspree -->
+            <input type="hidden" name="_subject" value="Test Restaurant Registration - Tabuloo">
+            <input type="hidden" name="_cc" value="tablooofficial1@gmail.com">
+            <input type="hidden" name="_replyto" value="" id="_replyto">
+
+            <button type="submit">Send Test Registration</button>
+        </form>
+
+        <div class="instructions" style="margin-top: 20px;">
+            <strong>What happens next:</strong>
+            <ol>
+                <li>Click the button above</li>
+                <li>Check tablooofficial1@gmail.com inbox</li>
+                <li>If email is received, the system is working!</li>
+                <li>If not, check spam folder or contact support</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // Auto-fill reply-to field with owner email
+        document.getElementById('owner_email').addEventListener('input', function() {
+            document.getElementById('_replyto').value = this.value;
+        });
+    </script>
+</body>
+</html>

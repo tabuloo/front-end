@@ -298,72 +298,49 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       }
       
-      // Public user login (phone-based with OTP)
+      // Public user login (username/password-based)
       if (role === 'public_user') {
         try {
-          if (!credentials.phone || !credentials.otp) {
-            toast.error('Phone number and OTP are required');
+          if (!credentials.username || !credentials.password) {
+            toast.error('Username and password are required');
             setLoading(false);
             return false;
           }
 
-          const userId = `user_${credentials.phone.replace(/\D/g, '')}`;
+          // Find user with matching username and password
+          const usersSnapshot = await getDocs(collection(db, 'users'));
+          let matchingUser: any = null;
           
-          try {
-            const userDoc = await getDoc(doc(db, 'users', userId));
-            
-            if (userDoc.exists()) {
-              const userData = userDoc.data();
-              
-              // OTP is already validated in the LoginForm component
-              // Here we just proceed with login
-              
-              // Update user's wallet balance to 0 in database
-              await updateDoc(doc(db, 'users', userId), {
-                walletBalance: 0
-              });
-              
-              const publicUser: User = {
-                id: userId,
-                name: userData.name,
-                phone: userData.phone,
-                role: 'public_user',
-                walletBalance: 0 // Always start with 0 wallet balance
-              };
-              
-              setUser(publicUser);
-              localStorage.setItem('currentUser', JSON.stringify(publicUser));
-              // ...existing code...
-            } else {
-              // If user doesn't exist, create a new user with the phone number
-              const newUser = {
-                name: `User_${credentials.phone.slice(-4)}`, // Generate a default name
-                phone: credentials.phone,
-                role: 'public_user',
-                walletBalance: 0.00, // Initial wallet balance starts at 0
-                createdAt: new Date()
-              };
-              
-              await setDoc(doc(db, 'users', userId), newUser);
-              
-              const publicUser: User = {
-                id: userId,
-                name: newUser.name,
-                phone: newUser.phone,
-                role: 'public_user',
-                walletBalance: newUser.walletBalance
-              };
-              
-              setUser(publicUser);
-              localStorage.setItem('currentUser', JSON.stringify(publicUser));
-              // ...existing code...
+          usersSnapshot.forEach((doc) => {
+            const userData = doc.data();
+            if (userData.role === 'public_user' && 
+                userData.username === credentials.username &&
+                userData.password === credentials.password) {
+              matchingUser = { id: doc.id, ...userData };
             }
+          });
+          
+          if (matchingUser) {
+            // Update user's wallet balance to 0 in database
+            await updateDoc(doc(db, 'users', matchingUser.id), {
+              walletBalance: 0
+            });
+            
+            const publicUser: User = {
+              id: matchingUser.id,
+              name: matchingUser.name,
+              role: 'public_user',
+              walletBalance: 0 // Always start with 0 wallet balance
+            };
+            
+            setUser(publicUser);
+            localStorage.setItem('currentUser', JSON.stringify(publicUser));
+            // ...existing code...
             
             setLoading(false);
             return true;
-          } catch (error) {
-            console.error('Error accessing user document:', error);
-            toast.error('Login failed. Please try again.');
+          } else {
+            toast.error('Invalid username or password');
             setLoading(false);
             return false;
           }
@@ -573,29 +550,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       }
 
-      // Handle public user registration (existing logic)
-      if (!userData.phone || !userData.name || !userData.otp) {
-        toast.error('Name, phone number, and OTP are required');
+      // Handle public user registration (username/password-based)
+      if (!userData.name || !userData.username || !userData.password) {
+        toast.error('Name, username, and password are required');
         setLoading(false);
         return false;
       }
 
-      const userId = `user_${userData.phone.replace(/\D/g, '')}`;
+      // Check if username already exists
+      const usersSnapshot = await getDocs(collection(db, 'users'));
+      let usernameExists = false;
       
-      // Check if user already exists
-      const existingUserDoc = await getDoc(doc(db, 'users', userId));
-      if (existingUserDoc.exists()) {
-        toast.error('User with this phone number already exists');
+      usersSnapshot.forEach((doc) => {
+        const existingUserData = doc.data();
+        if (existingUserData.username === userData.username) {
+          usernameExists = true;
+        }
+      });
+      
+      if (usernameExists) {
+        toast.error('Username already exists. Please choose a different username.');
         setLoading(false);
         return false;
       }
-      
-      // OTP is already validated in the RegisterForm component
-      // Here we just proceed with user creation
+
+      // Generate a unique user ID
+      const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
       const newUser = {
         name: userData.name,
-        phone: userData.phone,
+        username: userData.username,
+        password: userData.password, // In production, this should be hashed
         role: 'public_user',
         walletBalance: 0.00, // Initial wallet balance starts at 0
         createdAt: new Date()
@@ -606,7 +591,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const publicUser: User = {
         id: userId,
         name: newUser.name,
-        phone: newUser.phone,
         role: 'public_user',
         walletBalance: newUser.walletBalance
       };

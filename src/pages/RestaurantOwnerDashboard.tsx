@@ -4,7 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { Plus, Clock, DollarSign, Users, Package, ToggleLeft, ToggleRight, Edit, X, Trash2, AlertTriangle, Calendar, PartyPopper, Phone, MapPin, Lock, Eye as EyeIcon, EyeOff as EyeOffIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatOrderDate, formatBookingDate, formatTime } from '../utils/dateUtils';
-import { sendRestaurantRegistrationEmail, sendEmailFallback } from '../services/emailService';
+import { sendRestaurantRegistrationEmail, sendEmailFallback, EmailContent } from '../services/emailService';
+import EmailModal from '../components/EmailModal';
 
 const RestaurantOwnerDashboard: React.FC = () => {
   const { user, changeRestaurantOwnerPassword } = useAuth();
@@ -44,6 +45,10 @@ const RestaurantOwnerDashboard: React.FC = () => {
     restaurantImages: [] as string[]
   });
   const [isSubmittingRegistration, setIsSubmittingRegistration] = useState(false);
+  
+  // Email modal state
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailContent, setEmailContent] = useState<EmailContent | null>(null);
 
   // Menu form state
   const [menuFormData, setMenuFormData] = useState({
@@ -349,44 +354,35 @@ const RestaurantOwnerDashboard: React.FC = () => {
         toEmail: 'tablooofficial1@gmail.com'
       };
 
-      try {
-        // Try EmailJS first
-        const emailResult = await sendRestaurantRegistrationEmail(emailData);
-        
-        if (emailResult.success) {
+      // Try to send email automatically
+      const emailResult = await sendRestaurantRegistrationEmail(emailData);
+      
+      if (emailResult.success) {
+        // Check if email was sent automatically or needs manual action
+        if (emailResult.emailContent) {
+          // Email services failed, using modal fallback
+          toast.success('Registration submitted! Please send the email to complete the process.', {
+            duration: 4000
+          });
+          
+          // Show email modal with the content
+          setEmailContent(emailResult.emailContent);
+          setShowEmailModal(true);
+        } else {
+          // Email was sent automatically
           toast.success('Registration submitted and email sent to admin automatically!', {
             duration: 6000
           });
-        } else {
-          throw new Error(emailResult.message);
         }
-      } catch (error) {
-        console.error('EmailJS failed, trying fallback:', error);
+      } else {
+        // All email methods failed
+        toast.error('Failed to send email. Please contact admin manually.', {
+          duration: 8000
+        });
         
-        // Fallback to manual email
-        const fallbackResult = await sendEmailFallback(emailData);
-        
-        if (fallbackResult.success) {
-          toast.success('Registration submitted! Please send the email that opens to complete the process.', {
-            duration: 6000
-          });
-          
-          // Show additional guidance
-          setTimeout(() => {
-            toast('Important: Please click "Send" in your email client to notify the admin.', {
-              duration: 8000,
-              icon: 'ℹ️'
-            });
-          }, 2000);
-        } else {
-          toast.error('Failed to send email. Please contact admin manually.', {
-            duration: 8000
-          });
-          
-          // Show manual contact option
-          const contactInfo = `Admin Email: tablooofficial1@gmail.com\nPhone: +91 91009 33477\n\nRestaurant: ${registrationForm.restaurantName}\nOwner: ${registrationForm.ownerEmail}`;
-          showManualContactOption(contactInfo);
-        }
+        // Show manual contact option
+        const contactInfo = `Admin Email: tablooofficial1@gmail.com\nPhone: +91 91009 33477\n\nRestaurant: ${registrationForm.restaurantName}\nOwner: ${registrationForm.ownerEmail}`;
+        showManualContactOption(contactInfo);
       }
       
       // Reset form after successful submission
@@ -2247,6 +2243,15 @@ const RestaurantOwnerDashboard: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Email Modal */}
+      {showEmailModal && emailContent && (
+        <EmailModal
+          isOpen={showEmailModal}
+          onClose={() => setShowEmailModal(false)}
+          emailContent={emailContent}
+        />
+      )}
     </div>
   );
 };

@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emailjs/browser": "^4.3.3",
     "@tailwindcss/postcss": "^4.1.12",
     "@types/react-router-dom": "^5.3.3",
     "firebase": "^12.2.1",

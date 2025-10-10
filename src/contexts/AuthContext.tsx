@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { 
   signOut, 
-  onAuthStateChanged
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword
 } from 'firebase/auth';
 import { 
   doc, 
@@ -183,7 +185,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setLoading(true);
     
     try {
-      // Admin login with password verification
+      // Admin login with Firebase Auth
       if (role === 'admin') {
         // Only allow specific admin credentials
         const allowedAdminCredentials = [
@@ -198,31 +200,70 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           allowedAdminCredentials.includes(credentials.username) &&
           credentials.password === expectedPassword
         ) {
-          // Create admin user in Firestore if doesn't exist
-          const adminDoc = await getDoc(doc(db, 'users', 'admin_001'));
-          if (!adminDoc.exists()) {
-            await setDoc(doc(db, 'users', 'admin_001'), {
+          try {
+            // Create admin user in Firestore if doesn't exist
+            const adminDoc = await getDoc(doc(db, 'users', 'admin_001'));
+            if (!adminDoc.exists()) {
+              await setDoc(doc(db, 'users', 'admin_001'), {
+                name: 'Admin',
+                email: 'tablooofficial1@gmail.com',
+                phone: '9985121257',
+                role: 'admin',
+                createdAt: new Date()
+              });
+            }
+            
+            // Try to sign in with Firebase Auth using admin email
+            let firebaseUser = null;
+            try {
+              firebaseUser = await signInWithEmailAndPassword(
+                auth, 
+                'tablooofficial1@gmail.com', 
+                'admin123'
+              );
+            } catch (authError) {
+              // If user doesn't exist, create it
+              try {
+                firebaseUser = await createUserWithEmailAndPassword(
+                  auth, 
+                  'tablooofficial1@gmail.com', 
+                  'admin123'
+                );
+              } catch (createError) {
+                console.error('Error creating admin user:', createError);
+                // Continue with custom auth if Firebase Auth fails
+              }
+            }
+            
+            // Update Firebase Auth user document with admin role
+            if (firebaseUser) {
+              await setDoc(doc(db, 'users', firebaseUser.user.uid), {
+                name: 'Admin',
+                email: 'tablooofficial1@gmail.com',
+                phone: '9985121257',
+                role: 'admin',
+                createdAt: new Date()
+              }, { merge: true });
+            }
+            
+            const adminUser: User = {
+              id: firebaseUser ? firebaseUser.user.uid : 'admin_001',
               name: 'Admin',
               email: 'tablooofficial1@gmail.com',
               phone: '9985121257',
-              role: 'admin',
-              createdAt: new Date()
-            });
+              role: 'admin'
+            };
+            
+            setUser(adminUser);
+            localStorage.setItem('currentUser', JSON.stringify(adminUser));
+            setLoading(false);
+            return true;
+          } catch (error) {
+            console.error('Admin login error:', error);
+            toast.error('Failed to authenticate admin. Please try again.');
+            setLoading(false);
+            return false;
           }
-          
-          const adminUser: User = {
-            id: 'admin_001',
-            name: 'Admin',
-            email: 'tablooofficial1@gmail.com',
-            phone: '9985121257',
-            role: 'admin'
-          };
-          
-          setUser(adminUser);
-          localStorage.setItem('currentUser', JSON.stringify(adminUser));
-          // ...existing code...
-          setLoading(false);
-          return true;
         } else {
           toast.error('Invalid admin credentials. Only authorized users can access admin panel.');
           setLoading(false);

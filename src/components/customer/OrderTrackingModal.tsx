@@ -13,6 +13,7 @@ import {
   AlertCircle,
   Star
 } from 'lucide-react';
+import RatingModal from '../RatingModal';
 
 interface OrderTrackingModalProps {
   isOpen: boolean;
@@ -51,6 +52,7 @@ const OrderTrackingModal: React.FC<OrderTrackingModalProps> = ({ isOpen, onClose
   const [deliveryProgress, setDeliveryProgress] = useState<number>(0);
   const [estimatedDeliveryTime, setEstimatedDeliveryTime] = useState<Date | null>(null);
   const [showMap, setShowMap] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
 
   // Mock delivery boy data
   useEffect(() => {
@@ -404,10 +406,19 @@ const OrderTrackingModal: React.FC<OrderTrackingModalProps> = ({ isOpen, onClose
               Close
             </button>
             
-            {currentStatus === 'delivered' && (
-              <button className="flex-1 bg-gradient-to-r from-red-600 to-red-700 text-white py-3 px-4 rounded-lg hover:from-red-700 hover:to-red-800 font-medium transition-colors">
+            {currentStatus === 'delivered' && !order?.customerRating && (
+              <button 
+                onClick={() => setShowRatingModal(true)}
+                className="flex-1 bg-gradient-to-r from-red-600 to-red-700 text-white py-3 px-4 rounded-lg hover:from-red-700 hover:to-red-800 font-medium transition-colors"
+              >
                 Rate & Review
               </button>
+            )}
+            {currentStatus === 'delivered' && order?.customerRating && (
+              <div className="flex-1 flex items-center justify-center space-x-2 bg-green-50 text-green-700 py-3 px-4 rounded-lg">
+                <Star className="h-5 w-5 fill-current" />
+                <span className="font-medium">Rated {order.customerRating}/5</span>
+              </div>
             )}
           </div>
 
@@ -422,6 +433,15 @@ const OrderTrackingModal: React.FC<OrderTrackingModalProps> = ({ isOpen, onClose
           </div>
         </div>
       </div>
+
+      {/* Rating Modal */}
+      <RatingModal
+        isOpen={showRatingModal}
+        onClose={() => setShowRatingModal(false)}
+        orderId={order?.id || ''}
+        restaurantName={order?.restaurantName || 'Restaurant'}
+        customerName={order?.customerName || 'Customer'}
+      />
     </div>
   );
 };

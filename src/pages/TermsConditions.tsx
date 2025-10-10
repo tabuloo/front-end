@@ -145,7 +145,7 @@ const TermsConditions: React.FC = () => {
             <p className="text-gray-700 mb-4">For questions, complaints, or support:</p>
             <div className="space-y-2 text-gray-700">
               <p>📧 Email: support@tabuloo.com</p>
-              <p>📞 Phone: 9100933477</p>
+              <p>📞 Phone: 9100933477 </p>
               <p>📍 Office Address: 6-237-98-79, Devalam Extation, Madanapalle, Madanapalle, Chittoor- 517325, Andhra Pradesh</p>
             </div>
           </div>

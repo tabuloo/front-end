@@ -4,9 +4,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { Plus, Users, Store, MapPin, Edit, Trash2, X, AlertTriangle, DollarSign, TrendingUp, Calendar, BarChart3, LogOut } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import PasswordInput from '../components/PasswordInput';
 
 const AdminDashboard: React.FC = () => {
-  const { restaurants, orders, bookings, addRestaurant, updateRestaurant, deleteRestaurant } = useApp();
+  const { restaurants, orders, bookings, addRestaurant, updateRestaurant, deleteRestaurant, updateRestaurantStatus } = useApp();
   const { logout } = useAuth();
   const navigate = useNavigate();
   const [showAddForm, setShowAddForm] = useState(false);
@@ -16,6 +17,8 @@ const AdminDashboard: React.FC = () => {
   const [deletingRestaurant, setDeletingRestaurant] = useState<any>(null);
   const [selectedRestaurant, setSelectedRestaurant] = useState<any>(null);
   const [showRevenueDetails, setShowRevenueDetails] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     type: 'restaurant' as 'restaurant' | 'hotel' | 'resort',
@@ -28,8 +31,21 @@ const AdminDashboard: React.FC = () => {
     ownerPassword: '',
     timings: '9:00 AM - 11:00 PM'
   });
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [imageInput, setImageInput] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Dynamic total customers: unique users across orders and bookings
+  const totalCustomers = (() => {
+    try {
+      const orderUserIds = orders.map(o => o.userId).filter(Boolean);
+      const bookingUserIds = bookings.map(b => b.userId).filter(Boolean);
+      return new Set([...orderUserIds, ...bookingUserIds]).size;
+    } catch {
+      return 0;
+    }
+  })();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validate all required fields
@@ -53,8 +69,6 @@ const AdminDashboard: React.FC = () => {
       return;
     }
     
-    // Removed average price per person requirement
-    
     if (!formData.ownerUsername.trim()) {
       toast.error('Owner username is required');
       return;
@@ -65,44 +79,49 @@ const AdminDashboard: React.FC = () => {
       return;
     }
 
-    const newRestaurant = {
-      name: formData.name.trim(),
-      type: formData.type,
-      address: formData.address.trim(),
-      capacity: parseInt(formData.capacity),
-      crowdCapacity: parseInt(formData.crowdCapacity),
-      images: formData.images ? formData.images.split(',').map(img => img.trim()).filter(img => img) : [],
-      // Keep schema compatibility; default price to 0 when not captured during add
-      price: 0,
-      ownerCredentials: {
-        username: formData.ownerUsername.trim(),
-        password: formData.ownerPassword
-      },
-      isOpen: true,
-      timings: formData.timings || '9:00 AM - 11:00 PM'
-    };
+    setIsSubmitting(true);
 
-    addRestaurant(newRestaurant)
-      .then(() => {
-        setShowAddForm(false);
-        setFormData({
-          name: '',
-          type: 'restaurant',
-          address: '',
-          capacity: '',
-          crowdCapacity: '',
-          images: '',
-          price: '',
-          ownerUsername: '',
-          ownerPassword: '',
-          timings: '9:00 AM - 11:00 PM'
-        });
-        toast.success('Restaurant added successfully! Owner account has been created.');
-      })
-      .catch((error) => {
-        console.error('Error adding restaurant:', error);
-        toast.error('Failed to add restaurant. Please try again.');
+    try {
+      const newRestaurant = {
+        name: formData.name.trim(),
+        type: formData.type,
+        address: formData.address.trim(),
+        capacity: parseInt(formData.capacity),
+        crowdCapacity: parseInt(formData.crowdCapacity),
+        images: imageUrls,
+        price: 0, // Default price
+        ownerCredentials: {
+          username: formData.ownerUsername.trim(),
+          password: formData.ownerPassword
+        },
+        isOpen: true,
+        timings: formData.timings || '9:00 AM - 11:00 PM'
+      };
+
+      await addRestaurant(newRestaurant);
+      
+      setShowAddForm(false);
+      setFormData({
+        name: '',
+        type: 'restaurant',
+        address: '',
+        capacity: '',
+        crowdCapacity: '',
+        images: '',
+        price: '',
+        ownerUsername: '',
+        ownerPassword: '',
+        timings: '9:00 AM - 11:00 PM'
       });
+      setImageUrls([]);
+      setImageInput('');
+      toast.success('Restaurant added successfully! Owner account has been created.');
+    } catch (error) {
+      console.error('Error adding restaurant:', error);
+      toast.error('Failed to add restaurant. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleEdit = (restaurant: any) => {
@@ -127,13 +146,23 @@ const AdminDashboard: React.FC = () => {
     setShowDeleteConfirm(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deletingRestaurant) return;
     
-    deleteRestaurant(deletingRestaurant.id);
-    setShowDeleteConfirm(false);
-    setDeletingRestaurant(null);
-    toast.success('Place deleted successfully!');
+    setIsDeleting(true);
+    
+    try {
+      await deleteRestaurant(deletingRestaurant.id);
+      setShowDeleteConfirm(false);
+      setDeletingRestaurant(null);
+      toast.success(`Restaurant "${deletingRestaurant.name}" and all associated data deleted successfully!`);
+    } catch (error) {
+      console.error('Error deleting restaurant:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      toast.error(`Failed to delete restaurant: ${errorMessage}`);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const cancelDelete = () => {
@@ -141,29 +170,73 @@ const AdminDashboard: React.FC = () => {
     setDeletingRestaurant(null);
   };
 
-  const handleEditSubmit = (e: React.FormEvent) => {
+  const toggleRestaurantStatus = async (restaurant: any) => {
+    try {
+      await updateRestaurantStatus(restaurant.id, !restaurant.isOpen);
+      toast.success(`Restaurant ${restaurant.isOpen ? 'closed' : 'opened'} successfully!`);
+    } catch (error) {
+      console.error('Error toggling restaurant status:', error);
+      toast.error('Failed to update restaurant status. Please try again.');
+    }
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!editingRestaurant) return;
 
-    const updatedRestaurant = {
-      ...editingRestaurant,
-      name: formData.name,
-      type: formData.type,
-      address: formData.address,
-      capacity: parseInt(formData.capacity),
-      crowdCapacity: parseInt(formData.crowdCapacity),
-      images: formData.images.split(',').map(img => img.trim()),
-      // Preserve existing price; do not require editing it here
-      price: editingRestaurant.price ?? 0,
-      ownerCredentials: {
-        username: formData.ownerUsername,
-        password: formData.ownerPassword
-      },
-      timings: formData.timings
-    };
+    // Validate required fields
+    if (!formData.name.trim()) {
+      toast.error('Restaurant name is required');
+      return;
+    }
+    
+    if (!formData.address.trim()) {
+      toast.error('Restaurant address is required');
+      return;
+    }
+    
+    if (!formData.capacity || parseInt(formData.capacity) <= 0) {
+      toast.error('Please enter a valid food serving capacity');
+      return;
+    }
+    
+    if (!formData.crowdCapacity || parseInt(formData.crowdCapacity) <= 0) {
+      toast.error('Please enter a valid crowd capacity');
+      return;
+    }
+    
+    if (!formData.ownerUsername.trim()) {
+      toast.error('Owner username is required');
+      return;
+    }
+    
+    if (!formData.ownerPassword.trim() || formData.ownerPassword.length < 6) {
+      toast.error('Owner password must be at least 6 characters long');
+      return;
+    }
 
-    updateRestaurant(updatedRestaurant).then(() => {
+    setIsSubmitting(true);
+
+    try {
+      const updatedRestaurant = {
+        ...editingRestaurant,
+        name: formData.name.trim(),
+        type: formData.type,
+        address: formData.address.trim(),
+        capacity: parseInt(formData.capacity),
+        crowdCapacity: parseInt(formData.crowdCapacity),
+        images: formData.images ? formData.images.split(',').map(img => img.trim()).filter(img => img) : [],
+        price: editingRestaurant.price ?? 0,
+        ownerCredentials: {
+          username: formData.ownerUsername.trim(),
+          password: formData.ownerPassword
+        },
+        timings: formData.timings
+      };
+
+      await updateRestaurant(updatedRestaurant);
+      
       setShowEditForm(false);
       setEditingRestaurant(null);
       setFormData({
@@ -178,9 +251,13 @@ const AdminDashboard: React.FC = () => {
         ownerPassword: '',
         timings: '9:00 AM - 11:00 PM'
       });
-    }).catch((error) => {
+      toast.success('Restaurant updated successfully!');
+    } catch (error) {
       console.error('Error updating restaurant:', error);
-    });
+      toast.error('Failed to update restaurant. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const closeEditForm = () => {
@@ -326,7 +403,7 @@ const AdminDashboard: React.FC = () => {
               </div>
               <div className="ml-2 sm:ml-4">
                 <h3 className="text-xs sm:text-sm font-medium text-gray-600">Total Customers</h3>
-                <p className="text-lg sm:text-2xl font-bold text-blue-600">1,234</p>
+                <p className="text-lg sm:text-2xl font-bold text-blue-600">{totalCustomers}</p>
               </div>
             </div>
           </div>
@@ -536,22 +613,60 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Restaurant Images (comma separated URLs)
-                    </label>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Restaurant Images
+                  </label>
+
+                  {imageUrls.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {imageUrls.map((url, idx) => (
+                        <span key={idx} className="inline-flex items-center max-w-full px-2 py-1 rounded-full text-xs bg-gray-100 border">
+                          <span className="truncate max-w-[220px]">{url}</span>
+                          <button
+                            type="button"
+                            onClick={() => setImageUrls(prev => prev.filter((_, i) => i !== idx))}
+                            className="ml-2 text-gray-500 hover:text-gray-700"
+                            aria-label="Remove image URL"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex gap-2">
                     <input
-                      type="text"
-                      value={formData.images}
-                      onChange={(e) => setFormData(prev => ({ ...prev, images: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                      placeholder="https://image1.jpg, https://image2.jpg"
+                      type="url"
+                      value={imageInput}
+                      onChange={(e) => setImageInput(e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                      placeholder="https://image.jpg"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Optional: Add image URLs separated by commas</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const value = imageInput.trim();
+                        const isValid = /^https?:\/\/.+/i.test(value);
+                        if (!isValid) {
+                          toast.error('Enter a valid image URL');
+                          return;
+                        }
+                        if (imageUrls.includes(value)) {
+                          toast.error('URL already added');
+                          return;
+                        }
+                        setImageUrls(prev => [...prev, value]);
+                        setImageInput('');
+                      }}
+                      className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                    >
+                      Add
+                    </button>
                   </div>
 
-                  {/* Average Price per Person input removed from Add form */}
+                  <p className="text-xs text-gray-500 mt-1">Add one image URL at a time</p>
                 </div>
 
                 <div>
@@ -561,7 +676,14 @@ const AdminDashboard: React.FC = () => {
                   <input
                     type="text"
                     value={formData.timings}
-                    onChange={(e) => setFormData(prev => ({ ...prev, timings: e.target.value }))}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Allow formats like 9:00 AM - 11:00 PM (12-hour)
+                      const pattern = /^\s*(0?[1-9]|1[0-2]):[0-5][0-9]\s?(AM|PM)\s?-\s?(0?[1-9]|1[0-2]):[0-5][0-9]\s?(AM|PM)\s*$/i;
+                      if (value === '' || pattern.test(value)) {
+                        setFormData(prev => ({ ...prev, timings: value }));
+                      }
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                     placeholder="e.g., 9:00 AM - 11:00 PM"
                   />
@@ -595,14 +717,13 @@ const AdminDashboard: React.FC = () => {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Owner Password <span className="text-red-500">*</span>
                       </label>
-                      <input
-                        type="password"
+                      <PasswordInput
+                        value={formData.ownerPassword}
+                        onChange={(value) => setFormData(prev => ({ ...prev, ownerPassword: value }))}
+                        placeholder="Enter password for login"
+                        className="text-sm"
                         required
                         minLength={6}
-                        value={formData.ownerPassword}
-                        onChange={(e) => setFormData(prev => ({ ...prev, ownerPassword: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                        placeholder="Enter password for login"
                       />
                       <p className="text-xs text-gray-500 mt-1">Minimum 6 characters. Owner can change this later.</p>
                     </div>
@@ -619,9 +740,17 @@ const AdminDashboard: React.FC = () => {
                   </button>
                   <button
                     type="submit"
-                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 text-sm"
+                    disabled={isSubmitting}
+                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center space-x-2"
                   >
-                    Create Restaurant & Owner Account
+                    {isSubmitting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <span>Creating...</span>
+                      </>
+                    ) : (
+                      <span>Create Restaurant & Owner Account</span>
+                    )}
                   </button>
                 </div>
               </form>
@@ -724,7 +853,14 @@ const AdminDashboard: React.FC = () => {
                     <input
                       type="text"
                       value={formData.images}
-                      onChange={(e) => setFormData(prev => ({ ...prev, images: e.target.value }))}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        // Accept comma-separated URLs only
+                        const urlPattern = /^\s*(https?:\/\/[^\s,]+)(\s*,\s*https?:\/\/[^\s,]+)*\s*$/i;
+                        if (value === '' || urlPattern.test(value)) {
+                          setFormData(prev => ({ ...prev, images: value }));
+                        }
+                      }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                       placeholder="https://image1.jpg, https://image2.jpg"
                     />
@@ -773,13 +909,13 @@ const AdminDashboard: React.FC = () => {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Owner Password
                       </label>
-                      <input
-                        type="password"
-                        required
+                      <PasswordInput
                         value={formData.ownerPassword}
-                        onChange={(e) => setFormData(prev => ({ ...prev, ownerPassword: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                        onChange={(value) => setFormData(prev => ({ ...prev, ownerPassword: value }))}
                         placeholder="Password for login"
+                        className="text-sm"
+                        required
+                        minLength={6}
                       />
                       <p className="text-xs text-gray-500 mt-1">Minimum 6 characters. Owner can change this later.</p>
                     </div>
@@ -796,9 +932,17 @@ const AdminDashboard: React.FC = () => {
                   </button>
                   <button
                     type="submit"
-                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 text-sm"
+                    disabled={isSubmitting}
+                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center space-x-2"
                   >
-                    Update Restaurant & Owner Account
+                    {isSubmitting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <span>Updating...</span>
+                      </>
+                    ) : (
+                      <span>Update Restaurant & Owner Account</span>
+                    )}
                   </button>
                 </div>
               </form>
@@ -824,9 +968,17 @@ const AdminDashboard: React.FC = () => {
                 <p className="text-sm sm:text-base text-gray-700">
                   Are you sure you want to delete <strong>{deletingRestaurant.name}</strong>?
                 </p>
-                <p className="text-xs sm:text-sm text-red-600 mt-2">
-                  This will also delete all associated menu items, orders, and bookings.
-                </p>
+                <div className="text-xs sm:text-sm text-red-600 mt-2 space-y-1">
+                  <p>⚠️ This action will permanently delete:</p>
+                  <ul className="list-disc list-inside ml-2 space-y-1">
+                    <li>The restaurant record</li>
+                    <li>All associated menu items</li>
+                    <li>All associated orders and order history</li>
+                    <li>All associated bookings and booking history</li>
+                    <li>The restaurant owner account</li>
+                  </ul>
+                  <p className="font-semibold">This action cannot be undone!</p>
+                </div>
               </div>
               
               <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
@@ -838,9 +990,17 @@ const AdminDashboard: React.FC = () => {
                 </button>
                 <button
                   onClick={confirmDelete}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
+                  disabled={isDeleting}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center space-x-2"
                 >
-                  Delete Place
+                  {isDeleting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Deleting...</span>
+                    </>
+                  ) : (
+                    <span>Delete Restaurant</span>
+                  )}
                 </button>
               </div>
             </div>
@@ -868,7 +1028,7 @@ const AdminDashboard: React.FC = () => {
                   <h3 className="font-semibold text-gray-900 text-sm sm:text-base mb-1">{restaurant.name}</h3>
                   <p className="text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">{restaurant.type}</p>
                   <p className="text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2 line-clamp-2">{restaurant.address}</p>
-                  <p className="text-xs sm:text-sm font-medium text-green-600 mb-2 sm:mb-3">₹{restaurant.price}/person</p>
+                  {/* Price per person hidden as requested */}
                   
                   {/* Revenue Information */}
                   <div className="mt-3 pt-3 border-t border-gray-100">
@@ -1084,7 +1244,7 @@ const AdminDashboard: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-gray-600">Crowd Capacity: <span className="font-medium text-gray-900">{selectedRestaurant.crowdCapacity} people</span></p>
-                    <p className="text-gray-600">Avg Price: <span className="font-medium text-gray-900">₹{selectedRestaurant.price}/person</span></p>
+                    {/* Avg price hidden as requested */}
                     <p className="text-gray-600">Timings: <span className="font-medium text-gray-900">{selectedRestaurant.timings}</span></p>
                   </div>
                 </div>

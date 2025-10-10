@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
-import { Plus, Clock, DollarSign, Users, Package, ToggleLeft, ToggleRight, Edit, X, Trash2, AlertTriangle, Calendar, PartyPopper, Phone, MapPin, Lock, Eye as EyeIcon, EyeOff as EyeOffIcon } from 'lucide-react';
+import { Plus, Clock, DollarSign, Users, Package, ToggleLeft, ToggleRight, Edit, X, Trash2, AlertTriangle, Calendar, PartyPopper, Phone, MapPin, Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatOrderDate, formatBookingDate, formatTime } from '../utils/dateUtils';
 import { sendRestaurantRegistrationEmail, sendEmailFallback, EmailContent } from '../services/emailService';
 import EmailModal from '../components/EmailModal';
+import PasswordInput from '../components/PasswordInput';
 
 const RestaurantOwnerDashboard: React.FC = () => {
   const { user, changeRestaurantOwnerPassword } = useAuth();
@@ -23,11 +24,6 @@ const RestaurantOwnerDashboard: React.FC = () => {
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
-  });
-  const [showPasswords, setShowPasswords] = useState({
-    current: false,
-    new: false,
-    confirm: false
   });
   const [updatingStatuses, setUpdatingStatuses] = useState<Set<string>>(new Set());
   const [successUpdates, setSuccessUpdates] = useState<Set<string>>(new Set());
@@ -405,12 +401,6 @@ const RestaurantOwnerDashboard: React.FC = () => {
     }
   };
 
-  const togglePasswordVisibility = (field: 'current' | 'new' | 'confirm') => {
-    setShowPasswords(prev => ({
-      ...prev,
-      [field]: !prev[field]
-    }));
-  };
 
   // If user is not logged in or doesn't have a restaurant, show registration form
   if (!user || !currentRestaurant) {
@@ -2146,81 +2136,41 @@ const RestaurantOwnerDashboard: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Current Password
                   </label>
-                  <div className="relative">
-                    <input
-                      type={showPasswords.current ? 'text' : 'password'}
-                      required
-                      value={passwordForm.currentPassword}
-                      onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
-                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                      placeholder="Enter current password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => togglePasswordVisibility('current')}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                    >
-                      {showPasswords.current ? (
-                        <EyeOffIcon className="h-4 w-4" />
-                      ) : (
-                        <EyeIcon className="h-4 w-4" />
-                      )}
-                    </button>
-                  </div>
+                  <PasswordInput
+                    value={passwordForm.currentPassword}
+                    onChange={(value) => setPasswordForm(prev => ({ ...prev, currentPassword: value }))}
+                    placeholder="Enter current password"
+                    className="text-sm focus:ring-blue-500"
+                    required
+                  />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     New Password
                   </label>
-                  <div className="relative">
-                    <input
-                      type={showPasswords.new ? 'text' : 'password'}
-                      required
-                      value={passwordForm.newPassword}
-                      onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
-                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                      placeholder="Enter new password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => togglePasswordVisibility('new')}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                    >
-                      {showPasswords.new ? (
-                        <EyeOffIcon className="h-4 w-4" />
-                      ) : (
-                        <EyeIcon className="h-4 w-4" />
-                      )}
-                    </button>
-                  </div>
+                  <PasswordInput
+                    value={passwordForm.newPassword}
+                    onChange={(value) => setPasswordForm(prev => ({ ...prev, newPassword: value }))}
+                    placeholder="Enter new password"
+                    className="text-sm focus:ring-blue-500"
+                    required
+                    minLength={6}
+                  />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Confirm New Password
                   </label>
-                  <div className="relative">
-                    <input
-                      type={showPasswords.confirm ? 'text' : 'password'}
-                      required
-                      value={passwordForm.confirmPassword}
-                      onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                      placeholder="Confirm new password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => togglePasswordVisibility('confirm')}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                    >
-                      {showPasswords.confirm ? (
-                        <EyeOffIcon className="h-4 w-4" />
-                      ) : (
-                        <EyeIcon className="h-4 w-4" />
-                      )}
-                    </button>
-                  </div>
+                  <PasswordInput
+                    value={passwordForm.confirmPassword}
+                    onChange={(value) => setPasswordForm(prev => ({ ...prev, confirmPassword: value }))}
+                    placeholder="Confirm new password"
+                    className="text-sm focus:ring-blue-500"
+                    required
+                    minLength={6}
+                  />
                 </div>
 
                 <div className="flex justify-end space-x-3 pt-4">

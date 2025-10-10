@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { UserPlus } from 'lucide-react';
 import toast from 'react-hot-toast';
+import PasswordInput from '../PasswordInput';
 
 interface RegisterFormProps {
   onSwitchToLogin: () => void;
@@ -105,13 +106,12 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onRegister
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Password
           </label>
-          <input
-            type="password"
-            required
+          <PasswordInput
             value={formData.password}
-            onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            onChange={(value) => setFormData(prev => ({ ...prev, password: value }))}
             placeholder="Create a password"
+            className="focus:ring-orange-500 focus:border-transparent"
+            required
           />
         </div>
 
@@ -119,13 +119,12 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onRegister
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Confirm Password
           </label>
-          <input
-            type="password"
-            required
+          <PasswordInput
             value={formData.confirmPassword}
-            onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            onChange={(value) => setFormData(prev => ({ ...prev, confirmPassword: value }))}
             placeholder="Confirm your password"
+            className="focus:ring-orange-500 focus:border-transparent"
+            required
           />
         </div>
 

@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { LogIn } from 'lucide-react';
 import toast from 'react-hot-toast';
+import PasswordInput from '../PasswordInput';
 
 interface LoginFormProps {
   role: 'admin' | 'restaurant_owner' | 'public_user';
@@ -84,13 +85,12 @@ const LoginForm: React.FC<LoginFormProps> = ({ role, onSwitchToRegister, onLogin
           <label className="block text-sm font-medium text-gray-700 mb-1">
             {role === 'admin' ? 'Admin Password' : 'Password'}
           </label>
-          <input
-            type="password"
-            required
+          <PasswordInput
             value={formData.password}
-            onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            onChange={(value) => setFormData(prev => ({ ...prev, password: value }))}
             placeholder={role === 'admin' ? 'Enter admin password' : 'Enter password'}
+            className="focus:ring-orange-500 focus:border-transparent"
+            required
           />
           {role === 'restaurant_owner' && (
             <div className="text-right mt-1">

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { X, Package, User, Phone, Mail, MapPin, Truck, Eye, EyeOff, CheckCircle, Shield, Camera, CreditCard, Banknote, Upload } from 'lucide-react';
+import { X, Package, User, Phone, Mail, MapPin, Truck, CheckCircle, Shield, Camera, CreditCard, Banknote, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
+import PasswordInput from '../PasswordInput';
 
 interface DeliveryBoyAuthModalProps {
   isOpen: boolean;
@@ -39,8 +40,6 @@ const DeliveryBoyAuthModal: React.FC<DeliveryBoyAuthModalProps> = ({ isOpen, onC
   const { login, register, sendDeliveryLoginOTP } = useAuth();
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Login OTP states
@@ -481,23 +480,13 @@ const DeliveryBoyAuthModal: React.FC<DeliveryBoyAuthModalProps> = ({ isOpen, onC
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Password
                   </label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      required
-                      value={loginData.password}
-                      onChange={(e) => handleLoginInputChange('password', e.target.value)}
-                      className="w-full px-4 py-3 sm:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent pr-12 text-base"
-                      placeholder="Enter your password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                    </button>
-                  </div>
+                  <PasswordInput
+                    value={loginData.password}
+                    onChange={(value) => handleLoginInputChange('password', value)}
+                    placeholder="Enter your password"
+                    className="focus:ring-red-500 focus:border-transparent text-base px-4 py-3 sm:py-4"
+                    required
+                  />
                 </div>
               ) : (
                 <div>
@@ -880,46 +869,26 @@ const DeliveryBoyAuthModal: React.FC<DeliveryBoyAuthModalProps> = ({ isOpen, onC
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Password *
                     </label>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        required
-                        value={formData.password}
-                        onChange={(e) => handleInputChange('password', e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent pr-12"
-                        placeholder="Create a password"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      >
-                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                      </button>
-                    </div>
+                    <PasswordInput
+                      value={formData.password}
+                      onChange={(value) => handleInputChange('password', value)}
+                      placeholder="Create a password"
+                      className="focus:ring-red-500 focus:border-transparent px-4 py-3"
+                      required
+                    />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Confirm Password *
                     </label>
-                    <div className="relative">
-                      <input
-                        type={showConfirmPassword ? 'text' : 'password'}
-                        required
-                        value={formData.confirmPassword}
-                        onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent pr-12"
-                        placeholder="Confirm your password"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      >
-                        {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                      </button>
-                    </div>
+                    <PasswordInput
+                      value={formData.confirmPassword}
+                      onChange={(value) => handleInputChange('confirmPassword', value)}
+                      placeholder="Confirm your password"
+                      className="focus:ring-red-500 focus:border-transparent px-4 py-3"
+                      required
+                    />
                   </div>
                 </div>
               </div>

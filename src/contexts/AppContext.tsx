@@ -9,7 +9,8 @@ import {
   query, 
   where, 
   orderBy,
-  onSnapshot
+  onSnapshot,
+  writeBatch
 } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import toast from 'react-hot-toast';
@@ -77,6 +78,9 @@ interface Order {
   createdAt: Date;
   statusUpdatedAt?: Date;
   paymentMethod?: 'wallet' | 'netbanking' | 'card' | 'upi' | 'cod';
+  customerRating?: number;
+  customerReview?: string;
+  ratedAt?: Date;
 }
 
 interface Booking {
@@ -235,6 +239,7 @@ interface AppContextType {
   addOrder: (order: Omit<Order, 'id'>) => Promise<void>;
   addBooking: (booking: Omit<Booking, 'id'>) => Promise<void>;
   updateOrderStatus: (orderId: string, status: Order['status']) => Promise<void>;
+  updateOrderRating: (orderId: string, rating: number, review?: string) => Promise<void>;
   updateBookingStatus: (bookingId: string, status: Booking['status']) => Promise<void>;
   updateRestaurant: (restaurant: Restaurant) => Promise<void>;
   updateMenuItem: (menuItem: MenuItem) => Promise<void>;
@@ -504,6 +509,22 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
   };
 
+  const updateOrderRating = async (orderId: string, rating: number, review?: string) => {
+    try {
+      console.log('Updating order rating:', { orderId, rating, review, userId: auth.currentUser?.uid });
+      await updateDoc(doc(db, 'orders', orderId), { 
+        customerRating: rating,
+        customerReview: review,
+        ratedAt: new Date()
+      });
+      toast.success('Rating submitted successfully!');
+    } catch (error) {
+      console.error('Error updating order rating:', error);
+      toast.error('Failed to submit rating');
+      throw error;
+    }
+  };
+
   const updateBookingStatus = async (bookingId: string, status: Booking['status']) => {
     try {
       console.log('Updating booking status:', { bookingId, status, userId: auth.currentUser?.uid });
@@ -571,31 +592,40 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
   const deleteRestaurant = async (restaurantId: string) => {
     try {
+      // Start a batch operation to ensure all deletions succeed or fail together
+      const batch = writeBatch(db);
+      
       // Delete restaurant
-      await deleteDoc(doc(db, 'restaurants', restaurantId));
+      const restaurantRef = doc(db, 'restaurants', restaurantId);
+      batch.delete(restaurantRef);
       
       // Delete associated menu items
       const menuQuery = query(collection(db, 'menuItems'), where('restaurantId', '==', restaurantId));
       const menuSnapshot = await getDocs(menuQuery);
-      const deleteMenuPromises = menuSnapshot.docs.map(doc => deleteDoc(doc.ref));
-      await Promise.all(deleteMenuPromises);
+      menuSnapshot.docs.forEach(doc => batch.delete(doc.ref));
       
       // Delete associated orders
       const orderQuery = query(collection(db, 'orders'), where('restaurantId', '==', restaurantId));
       const orderSnapshot = await getDocs(orderQuery);
-      const deleteOrderPromises = orderSnapshot.docs.map(doc => deleteDoc(doc.ref));
-      await Promise.all(deleteOrderPromises);
+      orderSnapshot.docs.forEach(doc => batch.delete(doc.ref));
       
       // Delete associated bookings
       const bookingQuery = query(collection(db, 'bookings'), where('restaurantId', '==', restaurantId));
       const bookingSnapshot = await getDocs(bookingQuery);
-      const deleteBookingPromises = bookingSnapshot.docs.map(doc => deleteDoc(doc.ref));
-      await Promise.all(deleteBookingPromises);
+      bookingSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+      
+      // Delete associated restaurant owner user account
+      const ownerUserId = `owner_${restaurantId}`;
+      const ownerUserRef = doc(db, 'users', ownerUserId);
+      batch.delete(ownerUserRef);
+      
+      // Commit all deletions in a single batch operation
+      await batch.commit();
       
       toast.success('Restaurant and all associated data deleted successfully!');
     } catch (error) {
       console.error('Error deleting restaurant:', error);
-      toast.error('Failed to delete restaurant');
+      toast.error('Failed to delete restaurant. Please try again.');
       throw error;
     }
   };
@@ -874,6 +904,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     addOrder,
     addBooking,
     updateOrderStatus,
+    updateOrderRating,
     updateBookingStatus,
     updateRestaurant,
     updateMenuItem,

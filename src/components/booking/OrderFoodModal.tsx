@@ -396,9 +396,8 @@ const OrderFoodModal: React.FC<OrderFoodModalProps> = ({ isOpen, onClose, select
                       <p className="text-xs sm:text-sm text-gray-500">{restaurant.timings}</p>
                       
                       <div className="flex justify-between items-center pt-2">
-                        <span className="text-base sm:text-lg font-semibold text-red-800">
-                          ₹{restaurant.price}/person
-                        </span>
+                        {/* Price per person hidden as requested */}
+                        <span />
                         <button className="bg-gradient-to-r from-red-800 to-red-900 text-white px-3 sm:px-4 py-2 rounded-lg hover:from-red-900 hover:to-red-950 transition-colors text-xs sm:text-sm">
                           View Menu
                         </button>

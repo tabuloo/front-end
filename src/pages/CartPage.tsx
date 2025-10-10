@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'; 
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -31,6 +31,11 @@ const CartPage: React.FC = () => {
   const [showMap, setShowMap] = useState(false);
   const [orderType, setOrderType] = useState<'delivery' | 'pickup'>('delivery');
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+
+  // Ensure page opens at top
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, []);
 
   const handleQuantityChange = (itemId: string, newQuantity: number) => {
     if (newQuantity <= 0) {

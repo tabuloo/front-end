@@ -1699,12 +1699,12 @@ const RestaurantOwnerDashboard: React.FC = () => {
                         >
                           {item.available ? (
                             <>
-                              <EyeIcon className="h-4 w-4" />
+                              <ToggleRight className="h-4 w-4" />
                               <span>Available</span>
                             </>
                           ) : (
                             <>
-                              <EyeOffIcon className="h-4 w-4" />
+                              <ToggleLeft className="h-4 w-4" />
                               <span>Unavailable</span>
                             </>
                           )}

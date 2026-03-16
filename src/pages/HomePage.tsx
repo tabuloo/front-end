@@ -93,17 +93,19 @@ const HomePage: React.FC = () => {
   const deliveredOrdersCount = orders.filter(o => o.status === 'delivered' || o.status === 'completed').length;
   const uniqueCustomersCount = new Set(orders.map(o => o.userId)).size;
   
-  // Calculate real average rating from all rated orders
-  const ratedOrders = orders.filter(o => o.customerRating && o.customerRating > 0);
-  const averageRating = ratedOrders.length > 0 
-    ? (ratedOrders.reduce((sum, o) => sum + (o.customerRating || 0), 0) / ratedOrders.length).toFixed(1)
-    : '4.9'; // Default rating if no ratings yet
+  // Calculate real average rating from all rated orders (no fake default)
+  const ratedOrders = orders.filter(o => typeof o.customerRating === 'number' && o.customerRating > 0);
+  const averageRatingValue =
+    ratedOrders.length > 0
+      ? ratedOrders.reduce((sum, o) => sum + (o.customerRating || 0), 0) / ratedOrders.length
+      : null;
+  const averageRatingDisplay = averageRatingValue !== null ? averageRatingValue.toFixed(1) : '—';
 
   const stats = [
     { number: `${restaurants.length}+`, label: 'Restaurants', icon: Utensils },
     { number: `${uniqueCustomersCount}`, label: 'Happy Customers', icon: Users },
     { number: `${deliveredOrdersCount}`, label: 'Orders Delivered', icon: ShoppingCart },
-    { number: averageRating, label: 'Average Rating', icon: Star }
+    { number: averageRatingDisplay, label: 'Average Rating', icon: Star }
   ];
 
   const filteredRestaurants = restaurants.filter(restaurant => 
@@ -327,9 +329,13 @@ const HomePage: React.FC = () => {
                   <div className="absolute -bottom-4 -left-4 sm:-bottom-6 sm:-left-6 bg-white p-3 sm:p-4 rounded-lg sm:rounded-xl shadow-lg">
                   <div className="flex items-center space-x-2">
                     <Star className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400 fill-current" />
-                    <span className="font-semibold text-sm sm:text-base">{averageRating} Rating</span>
+                    <span className="font-semibold text-sm sm:text-base">
+                      {averageRatingValue !== null ? `${averageRatingDisplay} Rating` : 'No ratings yet'}
+                    </span>
                   </div>
-                  <p className="text-xs sm:text-sm text-gray-600">{ratedOrders.length}+ Reviews</p>
+                  <p className="text-xs sm:text-sm text-gray-600">
+                    {ratedOrders.length > 0 ? `${ratedOrders.length}+ Reviews` : 'Be the first to review'}
+                  </p>
                 </div>
                 <div className="absolute -top-4 -right-4 sm:-top-6 sm:-right-6 bg-gradient-to-r from-red-800 to-red-900 text-white p-3 sm:p-4 rounded-lg sm:rounded-xl shadow-lg">
                   <div className="text-center">
